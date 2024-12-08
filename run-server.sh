@@ -1,3 +1,3 @@
 #!/bin/sh
 
-uvicorn main:app --reload --log-config=logging_dev.yaml
+uvicorn main:app --log-config=logging_dev.yaml

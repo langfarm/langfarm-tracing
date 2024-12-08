@@ -15,6 +15,13 @@ handlers:
     when: 'D'
     backupCount: 7
 loggers:
+  langfarm_tracing.api.routes.ingestion:
+    level: INFO
+    handlers:
+      - console
+      - file_handler
+    # 关闭日志传播。即打日志到此为止，不会重复在其它地方打。
+    propagate: no
   langfarm_tracing:
     level: DEBUG
     handlers:
