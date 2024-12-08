@@ -105,6 +105,9 @@ class Settings(BaseSettings):
     LANGFUSE_CACHE_API_KEY_ENABLED: bool = True
     LANGFUSE_CACHE_API_KEY_TTL_SECONDS: int = 600
 
+    # kafka
+    KAFKA_BOOTSTRAP_SERVERS: str
+
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
             message = (

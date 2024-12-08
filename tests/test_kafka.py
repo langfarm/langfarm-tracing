@@ -1,12 +1,13 @@
 import json
 import logging
-import os
 import unittest
 
-from confluent_kafka import Producer
 from confluent_kafka import Consumer
+from confluent_kafka import Producer
 
+# 在 from langfarm_tracing.core.config import settings 之前
 from tests.base import BaseTestCase
+from langfarm_tracing.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +26,10 @@ class MyTestCase(BaseTestCase):
     def _set_up_class(cls):
         cls.config = {
             # User-specific properties that you must set
-            'bootstrap.servers': os.getenv('kafka_bootstrap_servers'),
+            'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS,
         }
+
+        logger.info("KAFKA_BOOTSTRAP_SERVERS=%s", settings.KAFKA_BOOTSTRAP_SERVERS)
 
         cls.str_data = cls.read_file_to_str('trace-01-part1.json')
         cls.json_data = json.loads(cls.str_data)
@@ -51,8 +54,6 @@ class MyTestCase(BaseTestCase):
             **self.config
             , 'acks': 'all'
         }
-
-        logger.info("kafka_bootstrap_servers=%s", os.getenv('kafka_bootstrap_servers'))
 
         logger.info("send topic=[%s], key=[%s] events", self.topic, self.data_key)
         assert self.topic
