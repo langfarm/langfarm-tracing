@@ -1,0 +1,48 @@
+[tool.poetry]
+name = "langfarm-tracing"
+version = "0.1.0"
+description = "LLM Tracing 服务端"
+authors = ["chenlb <chenlbphoto@163.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115.6"
+passlib = {extras=["bcrypt"], version="^1.7.4"}
+
+# bcrypt 不能其它版本
+# Pin bcrypt until passlib supports the latest
+# https://github.com/pyca/bcrypt/issues/684#issuecomment-1836872510
+bcrypt = "4.0.1"
+
+pydantic-settings = "^2.2.1"
+tenacity = "^9.0.0"
+
+# db
+psycopg = {extras = ["binary"], version = "^3.1.13"}
+SQLAlchemy = "^2.0.36"
+
+# server
+uvicorn = {extras=["standard"], version="^0.32.1"}
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+coverage = "^7.6.4"
+pyyaml = "^6.0.2"
+
+[[tool.poetry.source]]
+name = "aliyun-pypi"
+url = "http://mirrors.aliyun.com/pypi/simple/"
+# primary 表示主镜像源
+priority = "primary"
+
+[[tool.poetry.source]]
+name = "ustc-pypi"
+url = "https://mirrors.ustc.edu.cn/pypi/simple"
+# supplemental 表示备镜像源
+priority = "supplemental"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
