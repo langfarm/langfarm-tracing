@@ -13,6 +13,7 @@ from tests.base import BaseTestCase
 from langfarm_tracing.auth.key import fast_hashed_secret_key
 from langfarm_tracing.core import db
 from langfarm_tracing.schema.langfuse import ApiKey
+from langfarm_tracing.crud.langfuse import select_api_key_by_pk_sk
 
 
 logger = logging.getLogger(__name__)
@@ -89,6 +90,14 @@ class MyTestCase(BaseTestCase):
         # read all
         for api_key in db.read_list(stmt, ApiKey):
             self.assert_api_key(api_key, pk)
+
+    def test_select_api_key_2(self):
+        pk = self.assert_pk_in_env()
+        sk = self.assert_sk_in_env()
+        api_key = select_api_key_by_pk_sk(pk, sk)
+        assert api_key
+
+        self.assert_api_key(api_key, pk)
 
     def test_show_create_api_key_sql(self):
         sql = CreateTable(ApiKey.__table__).compile(dialect=postgresql.dialect())

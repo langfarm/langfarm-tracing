@@ -1,4 +1,23 @@
+import base64
 import hashlib
+
+
+def decode_from_basic_auth(authorization: str) -> (str | None, str | None):
+    """
+    从 http 的 basic_auth 内容解码出 public key 和 secret key
+    :param authorization: http 的 basic_auth head 'authorization'
+    :return: (pk, sk)
+    """
+    pk = None
+    sk = None
+    auth = authorization.split(' ')
+    if len(auth) > 1:
+        auth = base64.b64decode(auth[1]).decode()
+        auth = auth.split(':')
+        pk = auth[0]
+        if len(auth) > 1:
+            sk = auth[1]
+    return pk, sk
 
 
 def fast_hashed_secret_key(secret_key: str, salt: str) -> str:
