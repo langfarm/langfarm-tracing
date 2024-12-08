@@ -1,3 +1,4 @@
+import json
 import logging.config
 import unittest
 from typing import final
@@ -55,6 +56,26 @@ class BaseTestCase(unittest.TestCase):
     @classmethod
     def _set_up_class(cls):
         pass
+
+    @classmethod
+    def read_json_file(cls, filename) -> dict:
+        """
+        从 filename 读取 json
+        :param filename: 相对于 tests/mock-data 的文件
+        :return: 返回 dict
+        """
+        with open(f"{base_dir}/tests/mock-data/{filename}") as f:
+            return json.load(f)
+
+    @classmethod
+    def read_file_to_str(cls, filename) -> str:
+        """
+        从 filename 读取 json
+        :param filename: 相对于 tests/mock-data 的文件
+        :return: 返回 dict
+        """
+        with open(f"{base_dir}/tests/mock-data/{filename}") as f:
+            return f.read()
 
     def setUp(self):
         # 打印空行

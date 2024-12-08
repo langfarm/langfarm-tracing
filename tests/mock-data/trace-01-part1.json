@@ -1,0 +1,46 @@
+ {
+    "batch": [
+        {
+            "id": "6b79b322-9723-4c28-b66c-ff2fd3f9da54",
+            "type": "trace-create",
+            "body": {
+                "id": "35d534a3-e8b6-41e0-9554-e835d41b15a9",
+                "timestamp": "2024-12-04T16:47:01.291867Z",
+                "name": "dashscope_hook_call",
+                "input": {
+                    "args": [
+                        "请用50个字描写春天的景色。"
+                    ],
+                    "kwargs": {}
+                },
+                "start_time": "2024-12-04T16:47:01.281726Z"
+            },
+            "timestamp": "2024-12-04T16:47:01.292087Z"
+        },
+        {
+            "id": "3999f1b2-ea2c-4257-ad59-940fd9dea688",
+            "type": "generation-create",
+            "body": {
+                "traceId": "35d534a3-e8b6-41e0-9554-e835d41b15a9",
+                "name": "tongyi_generation",
+                "startTime": "2024-12-04T16:47:01.292172Z",
+                "input": {
+                    "args": [
+                        "qwen-plus",
+                        "请用50个字描写春天的景色。"
+                    ],
+                    "kwargs": {}
+                },
+                "id": "71524d00-d334-49b4-aa47-c6cd4b377b52"
+            },
+            "timestamp": "2024-12-04T16:47:01.292784Z"
+        }
+    ],
+    "metadata": {
+        "batch_size": 2,
+        "sdk_integration": "default",
+        "sdk_name": "python",
+        "sdk_version": "2.53.9",
+        "public_key": "pk-lf-96197272-3e6e-4040-8a2b-698213f2420f"
+    }
+}

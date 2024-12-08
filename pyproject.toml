@@ -26,6 +26,9 @@ SQLAlchemy = "^2.0.36"
 # server
 uvicorn = {extras=["standard"], version="^0.32.1"}
 
+# bigdata
+confluent-kafka = "^2.6.1"
+
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
 coverage = "^7.6.4"
