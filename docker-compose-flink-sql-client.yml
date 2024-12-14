@@ -1,0 +1,18 @@
+
+services:
+  sql-client:
+    image: paimon-flink:0.9.0-1.20
+    networks:
+      - langfarm_default
+    command: bin/sql-client.sh
+    volumes:
+      - ./target/data:/data
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        rest.address: jobmanager
+
+networks:
+  langfarm_default:
+    external: true

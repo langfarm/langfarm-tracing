@@ -1,0 +1,35 @@
+services:
+  jobmanager:
+    image: paimon-flink:0.9.0-1.20
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    networks:
+      - langfarm_default
+    volumes:
+      - ./target/data:/data
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager        
+
+  taskmanager:
+    image: paimon-flink:0.9.0-1.20
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    networks:
+      - langfarm_default
+    volumes:
+      - ./target/data:/data
+    scale: 1
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 10
+
+
+networks:
+  langfarm_default:
+    external: true
