@@ -1,0 +1,112 @@
+{
+  "title": "Langfuse Observations",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "start_time": {
+      "type": "string",
+      "$comment": "timestamp(3)_LTZ"
+    },
+    "end_time": {
+      "type": "string",
+      "$comment": "timestamp(3)_LTZ"
+    },
+    "parent_observation_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "trace_id": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string"
+    },
+    "modelParameters": {
+      "type": "string"
+    },
+    "input": {
+      "type": "string"
+    },
+    "output": {
+      "type": "string"
+    },
+    "level": {
+      "type": "string",
+      "$comment": "DEFAULT 'DEFAULT'"
+    },
+    "status_message": {
+      "type": "string"
+    },
+    "completion_start_time": {
+      "type": "string",
+      "$comment": "timestamp(3)_LTZ"
+    },
+    "completion_tokens": {
+      "type": "integer",
+      "$comment": "DEFAULT 0"
+    },
+    "prompt_tokens": {
+      "type": "integer",
+      "$comment": "DEFAULT 0"
+    },
+    "total_tokens": {
+      "type": "integer",
+      "$comment": "DEFAULT 0"
+    },
+    "version": {
+      "type": "string"
+    },
+    "project_id": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "$comment": "timestamp(3)_LTZ"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "prompt_id": {
+      "type": "string"
+    },
+    "input_cost": {
+      "type": "number"
+    },
+    "output_cost": {
+      "type": "number"
+    },
+    "total_cost": {
+      "type": "number"
+    },
+    "internal_model": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string",
+      "$comment": "timestamp(3)_LTZ"
+    },
+    "calculated_input_cost": {
+      "type": "number"
+    },
+    "calculated_output_cost": {
+      "type": "number"
+    },
+    "calculated_total_cost": {
+      "type": "number"
+    },
+    "internal_model_id": {
+      "type": "string"
+    }
+  },
+  "required": [ "id", "project_id", "updated_at" ]
+}

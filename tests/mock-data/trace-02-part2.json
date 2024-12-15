@@ -1,0 +1,101 @@
+{
+    "batch": [
+        {
+            "id": "da965f43-07cd-44a9-85ff-f6969fbf3dbf",
+            "type": "generation-update",
+            "body": {
+                "traceId": "6412d159-9044-425b-ab5b-db59cd617c24",
+                "output": "```json\n{\n  \"a\": {\n    \"operation\": \"+\",\n    \"operands\": [\"b\", \"c\"]\n  }\n}\n```",
+                "id": "bb0ee754-18e3-4b1c-a6d8-349d922503d8",
+                "endTime": "2024-12-11T16:07:11.268647Z",
+                "model": "qwen-plus",
+                "usage": {
+                    "input": 26,
+                    "output": 29,
+                    "total_tokens": 55
+                }
+            },
+            "timestamp": "2024-12-11T16:07:11.269811Z"
+        },
+        {
+            "id": "60dddcdd-f61d-4778-b76d-ed3dbbb02335",
+            "type": "span-create",
+            "body": {
+                "traceId": "6412d159-9044-425b-ab5b-db59cd617c24",
+                "name": "JsonOutputParser",
+                "startTime": "2024-12-11T16:07:11.270612Z",
+                "metadata": {
+                    "tags": [
+                        "seq:step:2"
+                    ]
+                },
+                "input": "```json\n{\n  \"a\": {\n    \"operation\": \"+\",\n    \"operands\": [\"b\", \"c\"]\n  }\n}\n```",
+                "parentObservationId": "d50e451c-df87-4b32-831e-147575b87fb0",
+                "id": "39e2ae60-0ad7-4c6e-9324-a8a6f5a0fc66"
+            },
+            "timestamp": "2024-12-11T16:07:11.270701Z"
+        },
+        {
+            "id": "d3f86e51-e191-4d43-a107-1820c552a389",
+            "type": "span-update",
+            "body": {
+                "traceId": "6412d159-9044-425b-ab5b-db59cd617c24",
+                "output": {
+                    "a": {
+                        "operation": "+",
+                        "operands": [
+                            "b",
+                            "c"
+                        ]
+                    }
+                },
+                "id": "39e2ae60-0ad7-4c6e-9324-a8a6f5a0fc66",
+                "endTime": "2024-12-11T16:07:11.271871Z"
+            },
+            "timestamp": "2024-12-11T16:07:11.272022Z"
+        },
+        {
+            "id": "5d16020b-fe38-466f-8694-b430417f556a",
+            "type": "span-update",
+            "body": {
+                "traceId": "6412d159-9044-425b-ab5b-db59cd617c24",
+                "output": {
+                    "a": {
+                        "operation": "+",
+                        "operands": [
+                            "b",
+                            "c"
+                        ]
+                    }
+                },
+                "id": "d50e451c-df87-4b32-831e-147575b87fb0",
+                "endTime": "2024-12-11T16:07:11.272072Z"
+            },
+            "timestamp": "2024-12-11T16:07:11.272136Z"
+        },
+        {
+            "id": "ab79884a-705d-4bee-9d89-7ba20632e6ad",
+            "type": "trace-create",
+            "body": {
+                "id": "6412d159-9044-425b-ab5b-db59cd617c24",
+                "output": {
+                    "a": {
+                        "operation": "+",
+                        "operands": [
+                            "b",
+                            "c"
+                        ]
+                    }
+                }
+            },
+            "timestamp": "2024-12-11T16:07:11.272232Z"
+        }
+    ],
+    "metadata": {
+        "batch_size": 5,
+        "sdk_integration": "langchain",
+        "sdk_name": "python",
+        "sdk_version": "2.53.9",
+        "public_key": "pk-lf-96197272-3e6e-4040-8a2b-698213f2420f"
+    }
+}

@@ -1,0 +1,25 @@
+{
+  "title": "Langfuse Events",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "string"
+    },
+    "header": {
+      "type": "string"
+    }
+  },
+  "required": [ "id", "type", "timestamp", "body" ]
+}

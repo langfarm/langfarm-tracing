@@ -26,7 +26,7 @@
 运行启动脚本
 
 ```bash
-sh scripts/start-docker-compose-bigdata.sh
+sh scripts/start-kafka-docker-compose.sh
 ```
 
 本机增加 kafka 的 host 绑定：

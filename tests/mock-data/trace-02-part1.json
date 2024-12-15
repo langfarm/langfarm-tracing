@@ -1,0 +1,57 @@
+{
+    "batch": [
+        {
+            "id": "3fc761d9-919b-47ca-9b19-9685132c7b5b",
+            "type": "trace-create",
+            "body": {
+                "id": "6412d159-9044-425b-ab5b-db59cd617c24",
+                "timestamp": "2024-12-11T16:07:09.474638Z",
+                "name": "RunnableSequence",
+                "input": "把 a = b + c 转成 json 对象。不需要多余的解释。"
+            },
+            "timestamp": "2024-12-11T16:07:09.474776Z"
+        },
+        {
+            "id": "c140f76b-c642-48e3-b5e8-9bf81ce9082c",
+            "type": "span-create",
+            "body": {
+                "traceId": "6412d159-9044-425b-ab5b-db59cd617c24",
+                "name": "RunnableSequence",
+                "startTime": "2024-12-11T16:07:09.474816Z",
+                "input": "把 a = b + c 转成 json 对象。不需要多余的解释。",
+                "id": "d50e451c-df87-4b32-831e-147575b87fb0"
+            },
+            "timestamp": "2024-12-11T16:07:09.474876Z"
+        },
+        {
+            "id": "7b5dc7da-da97-4df3-a0d1-d279f83c9029",
+            "type": "generation-create",
+            "body": {
+                "traceId": "6412d159-9044-425b-ab5b-db59cd617c24",
+                "name": "Tongyi",
+                "startTime": "2024-12-11T16:07:09.475406Z",
+                "metadata": {
+                    "tags": [
+                        "seq:step:1"
+                    ],
+                    "ls_provider": "tongyi",
+                    "ls_model_type": "llm",
+                    "ls_model_name": "qwen-plus"
+                },
+                "input": "把 a = b + c 转成 json 对象。不需要多余的解释。",
+                "parentObservationId": "d50e451c-df87-4b32-831e-147575b87fb0",
+                "id": "bb0ee754-18e3-4b1c-a6d8-349d922503d8",
+                "model": "qwen-plus",
+                "modelParameters": {}
+            },
+            "timestamp": "2024-12-11T16:07:09.475844Z"
+        }
+    ],
+    "metadata": {
+        "batch_size": 3,
+        "sdk_integration": "langchain",
+        "sdk_name": "python",
+        "sdk_version": "2.53.9",
+        "public_key": "pk-lf-96197272-3e6e-4040-8a2b-698213f2420f"
+    }
+}

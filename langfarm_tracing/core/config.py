@@ -107,6 +107,7 @@ class Settings(BaseSettings):
 
     # kafka
     KAFKA_BOOTSTRAP_SERVERS: str
+    KAFKA_SCHEMA_REGISTRY_URL: str = "localhost:8085"
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":

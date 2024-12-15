@@ -1,0 +1,58 @@
+{
+  "title": "Langfuse Traces",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "project_id": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "string"
+    },
+    "external_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "release": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "public": {
+      "type": "string"
+    },
+    "bookmarked": {
+      "type": "string"
+    },
+    "input": {
+      "type": "string"
+    },
+    "output": {
+      "type": "string"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    }
+  },
+  "required": [ "id", "project_id", "updated_at" ]
+}

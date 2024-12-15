@@ -72,7 +72,7 @@ class MyTestCase(BaseTestCase):
 
         receive_config = {
             **self.config
-            , 'group.id': 'langfarm-consume-events'
+            , 'group.id': 'test-langfarm-consume-events'
             , 'auto.offset.reset': 'earliest'
         }
         consumer = Consumer(receive_config)

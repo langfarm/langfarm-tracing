@@ -1,0 +1,41 @@
+ {
+    "batch": [
+        {
+            "id": "844e5306-7ca4-4b8f-baf7-e529c898eb40",
+            "type": "generation-update",
+            "body": {
+                "traceId": "35d534a3-e8b6-41e0-9554-e835d41b15a9",
+                "name": "Dashscope-generation",
+                "input": "请用50个字描写春天的景色。",
+                "output": "春回大地，万物复苏，绿叶嫩芽点缀枝头，花朵竞相绽放，鸟语花香，一派生机勃勃的景象。",
+                "id": "71524d00-d334-49b4-aa47-c6cd4b377b52",
+                "endTime": "2024-12-04T16:47:03.226388Z",
+                "model": "qwen-plus",
+                "usage": {
+                    "input": 19,
+                    "output": 32,
+                    "unit": "TOKENS"
+                }
+            },
+            "timestamp": "2024-12-04T16:47:03.230789Z"
+        },
+        {
+            "id": "59cd358e-6966-410f-b000-c9e69a308dbf",
+            "type": "trace-create",
+            "body": {
+                "id": "35d534a3-e8b6-41e0-9554-e835d41b15a9",
+                "input": "请用50个字描写春天的景色。",
+                "output": "春回大地，万物复苏，绿叶嫩芽点缀枝头，花朵竞相绽放，鸟语花香，一派生机勃勃的景象。",
+                "end_time": "2024-12-04T16:47:03.316631Z"
+            },
+            "timestamp": "2024-12-04T16:47:03.316830Z"
+        }
+    ],
+    "metadata": {
+        "batch_size": 2,
+        "sdk_integration": "default",
+        "sdk_name": "python",
+        "sdk_version": "2.53.9",
+        "public_key": "pk-lf-96197272-3e6e-4040-8a2b-698213f2420f"
+    }
+}
