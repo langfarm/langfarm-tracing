@@ -106,6 +106,8 @@ class SpanHandler(BaseEventHandler):
         obj_transform_str(body, 'output')
         obj_transform_str(body, 'metadata')
 
+        body['type'] = 'SPAN'
+
         super()._deal_created_at(body, 'startTime')
 
         if 'endTime' in body:
@@ -172,6 +174,8 @@ class GenerationHandler(SpanHandler):
     def _do_handle_event(self, project_id: str, body: dict, event: dict) -> dict:
         super()._do_handle_event(project_id, body, event)
 
+        body['type'] = 'GENERATION'
+
         # usage
         self._deal_usage(body)
 
@@ -217,7 +221,7 @@ def events_dispose(data: dict, project_id: str, handler_map: dict = None) -> dic
     if handler_map is None:
         handler_map = handlers
     # 取 top metadata
-    header = dump_event_header(data)
+    top_header = dump_event_header(data)
     # 取到 batch
     batch = data.get('batch', [])
     successes = []
@@ -233,6 +237,8 @@ def events_dispose(data: dict, project_id: str, handler_map: dict = None) -> dic
                 continue
 
             body = event['body']
+            header = top_header.copy()
+            header['event_type'] = event_type
 
             try:
                 # 处理 event

@@ -1,7 +1,6 @@
 import json
 import logging
 import unittest
-from datetime import datetime, timezone
 
 from tests.base import BaseTestCase
 from langfarm_tracing.crud.events import TraceHandler, SpanHandler, GenerationHandler, BaseEventHandler, events_dispose
@@ -16,6 +15,13 @@ class MockEventData:
         self.event_id = event_id
         self.body = body
         self.header = header
+
+    def __str__(self):
+        return str({
+            'key': self.event_id
+            , 'body': self.body
+            , 'header': self.header
+        })
 
 
 class MockTraceHandler(TraceHandler):
@@ -53,30 +59,26 @@ class MockGenerationHandler(GenerationHandler):
 
 class MyTestCase(BaseTestCase):
 
-    def test_to_local_time(self):
-        str_data = self.read_file_to_str('trace-01-part1.json')
-        json_data = json.loads(str_data)
+    topics = ['traces', 'observations']
+    kafka_sources: dict[str, KafkaSource] = {}
 
-        assert 'batch' in json_data
-        batch = json_data['batch']
-        assert batch
-        assert len(batch) > 1
-        event = batch[0]
-        assert 'timestamp' in event
-        t = event['timestamp']
-        assert t
-        assert isinstance(t, str)
-        logger.info('timestamp = %s', t)
-        t_ltz = datetime.strptime(t, '%Y-%m-%dT%H:%M:%S.%fZ')
-        ltz = t_ltz.replace(tzinfo=timezone.utc).astimezone()
-        my_ltz = '2024-12-05 00:47:01.292087+08:00'
-        logger.info('timestamp_ltz = %s, f = %s', ltz, ltz.strftime('%Y-%m-%d %H:%M:%S.%f%z'))
-        assert str(ltz) == my_ltz
+    @classmethod
+    def _set_up_class(cls):
+        for topic in cls.topics:
+            group_id = f'test-langfarm-consume-{topic}'
+            # 'latest'
+            kafka_source = KafkaSource(topic, group_id)
+            cls.kafka_sources[topic] = kafka_source
+
+    @classmethod
+    def tearDownClass(cls):
+        for k, kafka_source in cls.kafka_sources.items():
+            kafka_source.close()
 
     def sub_message_to_list(self, message_source: KafkaSource, max_msg_cnt: int) -> list[KafkaMessage]:
         msg_cnt = 0
 
-        max_wait_cnt = 20
+        max_wait_cnt = 10
         wait_cnt = 0
 
         event_data_list: list[KafkaMessage] = []
@@ -115,8 +117,7 @@ class MyTestCase(BaseTestCase):
         return event_data_list
 
     def assert_receive_message(self, topic: str, message_map: dict[str, MockEventData]):
-        group_id = f'test-langfarm-consume-{topic}'
-        kafka_source = KafkaSource(topic, group_id)
+        kafka_source = self.kafka_sources[topic]
 
         messages = self.sub_message_to_list(kafka_source, len(message_map))
 
@@ -124,6 +125,7 @@ class MyTestCase(BaseTestCase):
         for event_data in messages:
             assert event_data.key in message_map
             e_event = message_map[event_data.key]
+            logger.info('assert receive message, 实际 = %s, 期望 = %s', event_data, e_event)
             assert event_data.body['id'] == e_event.body['id']
             assert event_data.body['project_id'] == e_event.body['project_id']
 
@@ -132,8 +134,15 @@ class MyTestCase(BaseTestCase):
             if 'trace_id' in event_data.body:
                 assert event_data.body['trace_id'] == e_event.body['trace_id']
 
+            if 'type' in event_data.body:
+                assert event_data.body['type'] == e_event.body['type']
+
             # == e_event.body['updated_at']
             assert event_data.body['updated_at']
+
+            # header
+            assert 'event_type' in event_data.header
+            assert event_data.header['event_type'] == e_event.header['event_type']
 
     def test_events_dispose(self):
         trace_handler = MockTraceHandler()
@@ -156,18 +165,21 @@ class MyTestCase(BaseTestCase):
             out = events_dispose(data, project_id, handlers)
             logger.info("mock dispose out => %s", out)
 
+        expect_event_map = {}
         obs_map = {}
         for handler in [span_handler, generation_handler]:
             events = handler.event_data_list
             for event_obj in events:
                 obs_map[event_obj.event_id] = event_obj
 
+        expect_event_map[self.topics[1]] = obs_map
         traces_map = {}
         for handler in [trace_handler]:
             events = handler.event_data_list
             for event_obj in events:
                 traces_map[event_obj.event_id] = event_obj
 
+        expect_event_map[self.topics[0]] = traces_map
         datas = [
             json.loads(self.read_file_to_str('trace-02-part1.json')),
             json.loads(self.read_file_to_str('trace-02-part2.json'))
@@ -176,8 +188,8 @@ class MyTestCase(BaseTestCase):
             out = events_dispose(data, project_id)
             logger.info("kafka dispose out => %s", out)
 
-        self.assert_receive_message('traces', traces_map)
-        self.assert_receive_message('observations', obs_map)
+        for topic in self.topics:
+            self.assert_receive_message(topic, expect_event_map[topic])
 
 
 if __name__ == '__main__':

@@ -79,7 +79,7 @@ class KafkaSink:
 def headers_to_dict(headers: list) -> dict:
     header_map = {}
     for h in headers:
-        header_map[h[0]] = h[1]
+        header_map[h[0]] = h[1].decode('utf-8')
 
     return header_map
 
@@ -91,21 +91,29 @@ class KafkaMessage:
         self.body = body
         self.header = header
 
+    def __str__(self):
+        return str({
+            'key': self.key
+            , 'body': self.body
+            , 'header': self.header
+        })
+
 
 class KafkaSource:
 
-    def __init__(self, topic: str, group_id: str, **kwargs):
+    def __init__(self, topic: str, group_id: str, offset_reset: str = 'earliest'):
         receive_config = {
             'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS
             # , 'schema.registry.url': settings.KAFKA_SCHEMA_REGISTRY_URL
             , 'group.id': group_id
-            , 'auto.offset.reset': 'earliest'
-            , **kwargs
+            , 'auto.offset.reset': offset_reset
         }
 
+        self.receive_config = receive_config
         self.topic = topic
+        self.group_id = group_id
 
-        logger.info("KAFKA_BOOTSTRAP_SERVERS=%s, topic=%s, group_id=%s", settings.KAFKA_SCHEMA_REGISTRY_URL, topic, group_id)
+        logger.info("receive_config = %s", receive_config)
         schema_registry_client = SchemaRegistryClient(schema_registry_config)
         self.registered_schema: RegisteredSchema = schema_registry_client.get_latest_version(f"{topic}-value")
         self.schema_str = self.registered_schema.schema.schema_str
@@ -118,6 +126,8 @@ class KafkaSource:
     def poll_message(self, timeout) -> KafkaMessage | None:
         msg = self.consumer.poll(timeout)
         if msg is None:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug("poll message is null within timeout = %s, receive_config = %s", timeout, self.receive_config)
             return None
         elif msg.error():
             logger.error("receive_message_error: %s", msg.error())
@@ -131,3 +141,4 @@ class KafkaSource:
 
     def close(self):
         self.consumer.close()
+        logger.info("Consumer close! topic = %s, group_id = %s", self.topic, self.group_id)
