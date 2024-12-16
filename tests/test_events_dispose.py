@@ -137,6 +137,9 @@ class MyTestCase(BaseTestCase):
             if 'type' in event_data.body:
                 assert event_data.body['type'] == e_event.body['type']
 
+            if 'timestamp' in event_data.header:
+                assert event_data.header['timestamp'] == e_event.header['timestamp']
+
             # == e_event.body['updated_at']
             assert event_data.body['updated_at']
 

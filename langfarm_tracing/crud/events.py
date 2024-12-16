@@ -7,6 +7,7 @@ from langfarm_tracing.crud.streaming import KafkaSink
 
 logger = logging.getLogger(__name__)
 
+
 def obj_transform_str(body: dict, key: str):
     if key in body:
         _input = body[key]
@@ -239,6 +240,8 @@ def events_dispose(data: dict, project_id: str, handler_map: dict = None) -> dic
             body = event['body']
             header = top_header.copy()
             header['event_type'] = event_type
+            if 'timestamp' in event:
+                header['timestamp'] = format_datetime(utc_time_to_ltz(event['timestamp']))
 
             try:
                 # 处理 event
