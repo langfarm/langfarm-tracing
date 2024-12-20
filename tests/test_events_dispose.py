@@ -190,6 +190,8 @@ class MyTestCase(BaseTestCase):
         for data in datas:
             out = events_dispose(data, project_id)
             logger.info("kafka dispose out => %s", out)
+            errs = out.get('errors')
+            assert len(errs) < 1
 
         for topic in self.topics:
             self.assert_receive_message(topic, expect_event_map[topic])

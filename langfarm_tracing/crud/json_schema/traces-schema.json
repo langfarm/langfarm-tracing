@@ -6,7 +6,8 @@
       "type": "string"
     },
     "timestamp": {
-      "type": "string"
+      "type": "string",
+      "format": "date-time"
     },
     "name": {
       "type": "string"
@@ -48,10 +49,12 @@
       "type": "string"
     },
     "created_at": {
-      "type": "string"
+      "type": "string",
+      "format": "date-time"
     },
     "updated_at": {
-      "type": "string"
+      "type": "string",
+      "format": "date-time"
     }
   },
   "required": [ "id", "project_id", "updated_at" ]

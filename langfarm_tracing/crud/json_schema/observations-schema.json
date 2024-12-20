@@ -10,11 +10,11 @@
     },
     "start_time": {
       "type": "string",
-      "$comment": "timestamp(3)_LTZ"
+      "format": "date-time"
     },
     "end_time": {
       "type": "string",
-      "$comment": "timestamp(3)_LTZ"
+      "format": "date-time"
     },
     "parent_observation_id": {
       "type": "string"
@@ -49,7 +49,7 @@
     },
     "completion_start_time": {
       "type": "string",
-      "$comment": "timestamp(3)_LTZ"
+      "format": "date-time"
     },
     "completion_tokens": {
       "type": "integer",
@@ -71,7 +71,7 @@
     },
     "created_at": {
       "type": "string",
-      "$comment": "timestamp(3)_LTZ"
+      "format": "date-time"
     },
     "unit": {
       "type": "string"
@@ -93,7 +93,7 @@
     },
     "updated_at": {
       "type": "string",
-      "$comment": "timestamp(3)_LTZ"
+      "format": "date-time"
     },
     "calculated_input_cost": {
       "type": "number"

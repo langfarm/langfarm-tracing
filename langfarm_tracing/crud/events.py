@@ -208,7 +208,6 @@ def dump_event_header(data: dict) -> dict:
     header = data.get('metadata', {})
     if 'batch_size' in header:
         del header['batch_size']
-    # header = json.dumps(header, ensure_ascii=False)
     if not isinstance(header, dict):
         try:
             header = json.loads(str(header))

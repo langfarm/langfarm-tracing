@@ -1,10 +1,7 @@
+import json
 import logging
-from typing import Tuple
 
-from confluent_kafka import Producer, Consumer
-from confluent_kafka.schema_registry import SchemaRegistryClient, SchemaReference, RegisteredSchema
-from confluent_kafka.schema_registry.json_schema import JSONSerializer, JSONDeserializer
-from confluent_kafka.serialization import SerializationContext, MessageField
+from confluent_kafka import Consumer
 
 from langfarm_tracing.core.config import settings
 from langfarm_tracing.core.kafka import get_kafka_producer
@@ -54,10 +51,6 @@ class KafkaSink:
 
         self.schema: str = read_schema_to_str(self.schema_name)
 
-        logger.info("KAFKA_SCHEMA_REGISTRY_URL=%s, topic=%s", settings.KAFKA_SCHEMA_REGISTRY_URL, topic)
-        schema_registry_client = SchemaRegistryClient(schema_registry_config)
-        self.json_serializer = JSONSerializer(self.schema, schema_registry_client)
-
     def to_headers(self, header: dict) -> list[tuple]:
         headers: list[tuple] = []
         for k, v in header.items():
@@ -67,7 +60,7 @@ class KafkaSink:
 
     def send_trace_ingestion(self, key: str, data: dict, header: dict):
         headers = self.to_headers(header)
-        post_data = self.json_serializer(data, SerializationContext(self.topic, MessageField.VALUE))
+        post_data = json.dumps(data, ensure_ascii=False)
         producer.produce(
             topic=self.topic, key=key, value=post_data, headers=headers, callback=delivery_callback
         )
@@ -104,7 +97,6 @@ class KafkaSource:
     def __init__(self, topic: str, group_id: str, offset_reset: str = 'earliest'):
         receive_config = {
             'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS
-            # , 'schema.registry.url': settings.KAFKA_SCHEMA_REGISTRY_URL
             , 'group.id': group_id
             , 'auto.offset.reset': offset_reset
         }
@@ -114,10 +106,6 @@ class KafkaSource:
         self.group_id = group_id
 
         logger.info("receive_config = %s", receive_config)
-        schema_registry_client = SchemaRegistryClient(schema_registry_config)
-        self.registered_schema: RegisteredSchema = schema_registry_client.get_latest_version(f"{topic}-value")
-        self.schema_str = self.registered_schema.schema.schema_str
-        self.json_deserializer = JSONDeserializer(self.schema_str, schema_registry_client=schema_registry_client)
 
         consumer = Consumer(receive_config)
         consumer.subscribe([topic])
@@ -134,7 +122,7 @@ class KafkaSource:
             return None
         else:
             key = msg.key().decode('utf-8')
-            message = self.json_deserializer(msg.value(), SerializationContext(msg.topic(), MessageField.VALUE))
+            message = json.loads(msg.value().decode('utf-8'))
             header = headers_to_dict(msg.headers())
 
             return KafkaMessage(key, message, header)
