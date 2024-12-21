@@ -14,7 +14,7 @@
 sh bin/start-langfuse-docker-compose.sh
 ```
 
-打开 langfuse http://localhost:3000
+打开 langfuse（以 v2 版本） http://localhost:3000，创建组织 -> 创建项目 -> 生成 pk/sk （保存好，下面示例需要用到）。
 
 启动 kafka 服务
 
@@ -87,7 +87,7 @@ sh scripts/create-tables-in-paimon.sh
 ### Langfarm Tracing 接 langfuse 上报日志
 
 前提：
-* 有 kafka 环境，langfarm-tracing 服务端 .env 配置：KAFKA_BOOTSTRAP_SERVERS；KAFKA_SCHEMA_REGISTRY_URL。
+* 有 kafka 环境，langfarm-tracing 服务端 .env 配置：KAFKA_BOOTSTRAP_SERVERS。
 * 有 flink + paimon 环境
 * 有 langfuse 的 postgres，langfarm 使用 api_key 数据用于接口监权。
 * 启动 langfarm-tracing 服务。
@@ -103,6 +103,9 @@ langfuse sdk 上报
 
 llm 应用改 LANGFUSE_HOST 配置，指向 langfarm-tracing 服务端的地址取可:
 ```dotenv
+## 修改成本地测试环境的 langfuse pk/sk
+LANGFUSE_SECRET_KEY=sk-lf-xxx
+LANGFUSE_PUBLIC_KEY=pk-lf-xxx
 LANGFUSE_HOST=http://localhost:8000
 # tongyi API Key
 DASHSCOPE_API_KEY=sk-xxx

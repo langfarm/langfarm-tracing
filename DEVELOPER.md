@@ -21,7 +21,7 @@
 sh bin/start-langfuse-docker-compose.sh
 ```
 
-打开 langfuse http://localhost:3000
+打开 langfuse（以 v2 版本） http://localhost:3000，创建组织 -> 创建项目 -> 生成 pk/sk （保存好，下面示例需要用到）。
 
 ### kafka 服务
 
@@ -110,6 +110,9 @@ sh run-server.sh
 
 llm 应用改 LANGFUSE_HOST 配置，指向 langfarm-tracing 服务端的地址取可:
 ```dotenv
+## 修改成本地测试环境的 langfuse pk/sk
+LANGFUSE_SECRET_KEY=sk-lf-xxx
+LANGFUSE_PUBLIC_KEY=pk-lf-xxx
 LANGFUSE_HOST=http://localhost:8000
 # tongyi API Key
 DASHSCOPE_API_KEY=sk-xxx
