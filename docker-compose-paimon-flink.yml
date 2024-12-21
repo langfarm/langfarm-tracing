@@ -7,7 +7,7 @@ services:
     networks:
       - langfarm_default
     volumes:
-      - ./target/data:/data
+      - /tmp/langfarm-tracing:/data
     environment:
       - |
         FLINK_PROPERTIES=
@@ -21,7 +21,7 @@ services:
     networks:
       - langfarm_default
     volumes:
-      - ./target/data:/data
+      - /tmp/langfarm-tracing:/data
     scale: 1
     environment:
       - |

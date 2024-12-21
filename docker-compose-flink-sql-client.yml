@@ -6,7 +6,8 @@ services:
       - langfarm_default
     command: bin/sql-client.sh
     volumes:
-      - ./target/data:/data
+      - /tmp/langfarm-tracing:/data
+      - ./scripts:/opt/flink/scripts
     environment:
       - |
         FLINK_PROPERTIES=

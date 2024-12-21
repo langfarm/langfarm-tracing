@@ -25,7 +25,7 @@ ARG FLINK_CDC_POSTGRES_JAR="${FLINK_CDC_POSTGRES}-${FLINK_CDC_POSTGRES_VERSION}.
 RUN wget -O /opt/flink/lib/${FLINK_CDC_POSTGRES_JAR} \
     "${MAVEN_MIRROR}/org/apache/flink/${FLINK_CDC_POSTGRES}/${FLINK_CDC_POSTGRES_VERSION}/${FLINK_CDC_POSTGRES_JAR}"
 
-ARG FLINK_CONNECTOR_KAFKA="flink-connector-kafka"
+ARG FLINK_CONNECTOR_KAFKA="flink-sql-connector-kafka"
 ARG FLINK_CONNECTOR_KAFKA_VERSION="3.4.0-1.20"
 ARG FLINK_CONNECTOR_KAFKA_JAR="${FLINK_CONNECTOR_KAFKA}-${FLINK_CONNECTOR_KAFKA_VERSION}.jar"
 RUN wget -O /opt/flink/lib/${FLINK_CONNECTOR_KAFKA_JAR} \
@@ -33,5 +33,9 @@ RUN wget -O /opt/flink/lib/${FLINK_CONNECTOR_KAFKA_JAR} \
 
 RUN wget -O /opt/flink/lib/commons-cli-1.9.0.jar \
     "${MAVEN_MIRROR}/commons-cli/commons-cli/1.9.0/commons-cli-1.9.0.jar"
+
+RUN wget -O /opt/flink/lib/flink-connector-base-1.20.0.jar \
+    "${MAVEN_MIRROR}/org/apache/flink/flink-connector-base/1.20.0/flink-connector-base-1.20.0.jar"
+
 
 COPY --chown=flink:flink conf/config.yaml /opt/flink/conf/
