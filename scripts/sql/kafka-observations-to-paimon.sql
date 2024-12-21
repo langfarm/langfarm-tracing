@@ -1,9 +1,9 @@
-
+-- kafka 的 observations 源表, 用临时表更方便。
 CREATE TEMPORARY TABLE kafka_observations_source (
     id STRING NOT NULL,
     name STRING,
     start_time TIMESTAMP_LTZ,
-    end_time TIMESTAMP(6),
+    end_time TIMESTAMP_LTZ,
     parent_observation_id STRING,
     type STRING,
     trace_id STRING,
@@ -31,33 +31,36 @@ CREATE TEMPORARY TABLE kafka_observations_source (
     calculated_input_cost numeric(65,30),
     calculated_output_cost numeric(65,30),
     calculated_total_cost numeric(65,30),
-    internal_model_id STRING
+    internal_model_id STRING,
+    __id__ STRING,
+    __trace_id__ STRING
 )
 WITH (
-  'connector' = 'kafka',
-  'topic' = 'observations',
-  'properties.bootstrap.servers' = 'kafka:9092',
-  'properties.group.id' = 'kafka-observations-to-paimon',
-  'scan.startup.mode' = 'group-offsets',
-  'format' = 'json',
-  -- 格式 "yyyy-MM-ddTHH:mm:ss.s{precision}Z"
-  'json.timestamp-format.standard' = 'ISO-8601',
-  'json.ignore-parse-errors' = 'true',
-  'json.map-null-key.mode' = 'DROP',
-  'json.encode.decimal-as-plain-number' = 'true'
+    'connector' = 'kafka',
+    'topic' = 'observations',
+    'properties.bootstrap.servers' = 'kafka:9092',
+    'properties.group.id' = 'kafka-observations-to-paimon',
+--  'scan.startup.mode' = 'group-offsets',
+    'scan.startup.mode' = 'earliest-offset',
+    'format' = 'json',
+    -- 格式 "yyyy-MM-ddTHH:mm:ss.s{precision}Z"
+    'json.timestamp-format.standard' = 'ISO-8601',
+    'json.ignore-parse-errors' = 'true',
+    'json.map-null-key.mode' = 'DROP',
+    'json.encode.decimal-as-plain-number' = 'true'
 )
 ;
 
 -- 从源表复制表结构来创建目标表
 CREATE TABLE IF NOT EXISTS langfarm.tracing.observations (
     -- 分区字段，按需要增加。
---    dt STRING,
---    hh STRING,
---    PRIMARY KEY (dt, hh, id) NOT ENFORCED
-    PRIMARY KEY (id) NOT ENFORCED
+    dt STRING,
+    hh STRING,
+    PRIMARY KEY (dt, hh, id) NOT ENFORCED
+--    PRIMARY KEY (id) NOT ENFORCED
 )
 -- 可以增加 天/小时 分区
---PARTITIONED BY (dt, hh)
+PARTITIONED BY (dt, hh)
 WITH (
     'merge-engine' = 'partial-update',
     'changelog-producer' = 'lookup',
@@ -78,5 +81,7 @@ LIKE kafka_observations_source (
 INSERT INTO langfarm.tracing.observations
 SELECT
 *
+,DATE_FORMAT(TO_TIMESTAMP(SPLIT_INDEX(trace_id, '-', 5), 'yyyyMMddHH'), 'yyyy-MM-dd') AS dt
+,DATE_FORMAT(TO_TIMESTAMP(SPLIT_INDEX(trace_id, '-', 5), 'yyyyMMddHH'), 'HH') AS hh
 FROM kafka_observations_source
 ;

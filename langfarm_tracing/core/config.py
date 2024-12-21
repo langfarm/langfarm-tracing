@@ -109,6 +109,12 @@ class Settings(BaseSettings):
     KAFKA_BOOTSTRAP_SERVERS: str
     KAFKA_SCHEMA_REGISTRY_URL: str = "localhost:8085"
 
+    # redis
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    REDIS_BODY_ID_EXPIRE_SECONDS: int = 1800
+
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
             message = (

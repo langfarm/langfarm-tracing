@@ -106,6 +106,12 @@
     },
     "internal_model_id": {
       "type": "string"
+    },
+    "__id__": {
+      "type": "string"
+    },
+    "__trace_id__": {
+      "type": "string"
     }
   },
   "required": [ "id", "project_id", "updated_at" ]

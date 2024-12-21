@@ -135,46 +135,47 @@ SET 'sql-client.execution.result-mode' = 'tableau';
 SET 'execution.runtime-mode' = 'batch';
 
 -- 查询
-select id, name, input, output, created_at, updated_at from langfarm.tracing.traces order by created_at desc limit 10;
+select id,SPLIT_INDEX(id, '-', 5) as sid, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.traces order by created_at desc limit 10;
 
 -- 查询 observations 表
--- select id, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at from langfarm.tracing.observations order by created_at desc limit 10;
+-- select id,SPLIT_INDEX(id, '-', 5) as sid, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.observations order by created_at desc limit 10;
 ```
 
 traces 结果如下：
 ```console
-Flink SQL> select id, name, input, created_at, updated_at from langfarm.tracing.traces order by created_at desc limit 10;
-+--------------------------------+------------------+--------------------------------+----------------------------+----------------------------+
-|                             id |             name |                          input |                 created_at |                 updated_at |
-+--------------------------------+------------------+--------------------------------+----------------------------+----------------------------+
-| afb48fbd-70f3-40e8-9f8b-392... | RunnableSequence | 把 a = b + c 转成 json 对象...   | 2024-12-21 16:41:09.384950 | 2024-12-21 16:41:10.122093 |
-+--------------------------------+------------------+--------------------------------+----------------------------+----------------------------+
-1 row in set (0.64 seconds)
+Flink SQL> select id,SPLIT_INDEX(id, '-', 5) as sid, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.traces order by created_at desc limit 10;
++--------------------------------+------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
+|                             id |        sid |             name |                          input |                 created_at |                 updated_at |         dt | hh |
++--------------------------------+------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
+| f3d6e324-ca35-4677-9de4-032... | 2024122123 | RunnableSequence | 把 a = b + c 转成 json 对象...   | 2024-12-21 23:34:27.652947 | 2024-12-21 23:35:43.536616 | 2024-12-21 | 23 |
++--------------------------------+------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
+2 rows in set (0.81 seconds)
+
 ```
 
 可以看下数据目录
 ```console
- % tree /tmp/langfarm-tracing/paimon/tracing.db/traces
+% tree /tmp/langfarm-tracing/paimon/tracing.db/traces
 /tmp/langfarm-tracing/paimon/tracing.db/traces
-├── bucket-0
-│   ├── changelog-42238d2f-9501-4220-8634-943e0a79f082-0.parquet
-│   └── data-afbc14c2-abc0-4720-b0cf-122d1a66163a-0.parquet
+├── dt=2024-12-21
+│   └── hh=23
+│       └── bucket-0
+│           ├── changelog-e9b7388e-f868-4337-b126-4137ec6c88dd-0.parquet
+│           └── data-3020179e-e5a0-4b60-b958-fac4d104049c-0.parquet
 ├── index
-│   └── index-d7dd71b7-ffb8-4e15-b4f5-b601291bda9e-0
+│   └── index-eb68fb9f-8a11-4e8a-b1ed-204f471e3c34-0
 ├── manifest
-│   ├── index-manifest-0906d795-98d9-40c0-8e2e-5fe1d7d386b6-0
-│   ├── manifest-85c77495-1a93-4c5c-8a36-6eea7594e9cf-0
-│   ├── manifest-85c77495-1a93-4c5c-8a36-6eea7594e9cf-1
-│   ├── manifest-85c77495-1a93-4c5c-8a36-6eea7594e9cf-2
-│   ├── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-0
-│   ├── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-1
-│   ├── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-2
-│   ├── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-3
-│   ├── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-4
-│   ├── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-5
-│   ├── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-6
-│   ├── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-7
-│   └── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-8
+│   ├── index-manifest-d11f9b05-2c7e-4ffb-89db-847d3a291d86-0
+│   ├── manifest-8cb7aeee-a87d-4e56-8e2b-46ce153b4cf3-0
+│   ├── manifest-8cb7aeee-a87d-4e56-8e2b-46ce153b4cf3-1
+│   ├── manifest-8cb7aeee-a87d-4e56-8e2b-46ce153b4cf3-2
+│   ├── manifest-list-dc092b4c-f295-481e-9b52-4fb7d1c1d374-0
+│   ├── manifest-list-dc092b4c-f295-481e-9b52-4fb7d1c1d374-1
+│   ├── manifest-list-dc092b4c-f295-481e-9b52-4fb7d1c1d374-2
+│   ├── manifest-list-dc092b4c-f295-481e-9b52-4fb7d1c1d374-3
+│   ├── manifest-list-dc092b4c-f295-481e-9b52-4fb7d1c1d374-4
+│   ├── manifest-list-dc092b4c-f295-481e-9b52-4fb7d1c1d374-5
+│   └── manifest-list-dc092b4c-f295-481e-9b52-4fb7d1c1d374-6
 ├── schema
 │   └── schema-0
 └── snapshot
@@ -182,9 +183,8 @@ Flink SQL> select id, name, input, created_at, updated_at from langfarm.tracing.
     ├── LATEST
     ├── snapshot-1
     ├── snapshot-2
-    ├── snapshot-3
-    └── snapshot-4
+    └── snapshot-3
 
-6 directories, 23 files
+8 directories, 20 files
 ```
 

@@ -1,4 +1,4 @@
-
+-- kafka 的 traces 源表, 用临时表更方便。
 CREATE TEMPORARY TABLE kafka_traces_source (
     id STRING NOT NULL,
     `timestamp` TIMESTAMP_LTZ,
@@ -16,14 +16,16 @@ CREATE TEMPORARY TABLE kafka_traces_source (
     session_id STRING,
     tags STRING,
     created_at TIMESTAMP_LTZ,
-    updated_at TIMESTAMP_LTZ
+    updated_at TIMESTAMP_LTZ,
+    __id__ STRING
 )
 WITH (
     'connector' = 'kafka',
     'topic' = 'traces',
     'properties.bootstrap.servers' = 'kafka:9092',
     'properties.group.id' = 'kafka-traces-to-paimon',
-    'scan.startup.mode' = 'group-offsets',
+--    'scan.startup.mode' = 'group-offsets',
+    'scan.startup.mode' = 'earliest-offset',
     'format' = 'json',
     -- 格式 "yyyy-MM-ddTHH:mm:ss.s{precision}Z"
     'json.timestamp-format.standard' = 'ISO-8601',
@@ -36,13 +38,13 @@ WITH (
 -- 从源表复制表结构来创建目标表
 CREATE TABLE IF NOT EXISTS langfarm.tracing.traces (
     -- 分区字段，按需要增加。
---    dt STRING,
---    hh STRING,
---    PRIMARY KEY (dt, hh, id) NOT ENFORCED
-    PRIMARY KEY (id) NOT ENFORCED
+    dt STRING,
+    hh STRING,
+    PRIMARY KEY (dt, hh, id) NOT ENFORCED
+--    PRIMARY KEY (id) NOT ENFORCED
 )
 -- 可以增加 天/小时 分区
---PARTITIONED BY (dt, hh)
+PARTITIONED BY (dt, hh)
 WITH (
     'merge-engine' = 'partial-update',
     'changelog-producer' = 'lookup',
@@ -63,5 +65,7 @@ LIKE kafka_traces_source (
 INSERT INTO langfarm.tracing.traces
 SELECT
 *
+,DATE_FORMAT(TO_TIMESTAMP(SPLIT_INDEX(id, '-', 5), 'yyyyMMddHH'), 'yyyy-MM-dd') AS dt
+,DATE_FORMAT(TO_TIMESTAMP(SPLIT_INDEX(id, '-', 5), 'yyyyMMddHH'), 'HH') AS hh
 FROM kafka_traces_source
 ;

@@ -19,6 +19,9 @@ bcrypt = "4.0.1"
 pydantic-settings = "^2.2.1"
 tenacity = "^9.0.0"
 
+# event body.id 增加 created_at 内容（用于数据分区）
+redis = {extras = ["hiredis"], version = "^5.2.1"}
+
 # db
 psycopg = {extras = ["binary"], version = "^3.1.13"}
 SQLAlchemy = "^2.0.36"

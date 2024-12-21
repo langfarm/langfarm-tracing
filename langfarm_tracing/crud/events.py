@@ -2,7 +2,9 @@ import json
 import logging
 from abc import abstractmethod
 from datetime import datetime, timezone
+from typing import final
 
+from langfarm_tracing.core.redis import read_created_at_or_set
 from langfarm_tracing.crud.streaming import KafkaSink
 
 logger = logging.getLogger(__name__)
@@ -23,6 +25,11 @@ def utc_time_to_ltz(utc_str: str) -> datetime:
 
 def format_datetime(dt: datetime) -> str:
     return datetime.strftime(dt, '%Y-%m-%d %H:%M:%S.%f')
+
+
+def created_at_to_suffix_id(utc_str: str) -> str:
+    ltz = utc_time_to_ltz(utc_str)
+    return datetime.strftime(ltz, '%Y%m%d%H')
 
 
 class BaseEventHandler:
@@ -61,7 +68,12 @@ class BaseEventHandler:
     def _do_handle_event(self, project_id: str, body: dict, event: dict) -> dict:
         pass
 
+    @final
     def handle_event(self, project_id: str, body: dict, event: dict, header: dict) -> dict:
+        # 备份原始 id 和 traceId
+        body['__id__'] = body['id']
+        if 'traceId' in body:
+            body['__trace_id__'] = body['traceId']
         body['project_id'] = project_id
 
         result = self._do_handle_event(project_id, body, event)
@@ -70,11 +82,43 @@ class BaseEventHandler:
 
         return result
 
-    def send_event_to_sink(self, event_id: str, body: dict, header: dict):
+    def dump_origin_trace_id(self, body: dict) -> str | None:
+        # 抽取原始 trace_id
+        if '__trace_id__' in body:
+            return body['__trace_id__']
+        else:
+            return None
+
+    def dump_origin_body_id(self, body: dict) -> str:
+        if '__id__' in body:
+            _id = body['__id__']
+        else:
+            _id = body['id']
+        return _id
+
+    def create_redis_key_body_id(self, origin_body_id: str) -> str:
+        return f"{self.topic}-{origin_body_id}"
+
+    def create_redis_key_trace_id(self, origin_trace_id) -> str:
+        return f"traces-{origin_trace_id}"
+
+    def create_new_trace_id(self, origin_trace_id: str, created_at: str) -> str:
+        return f"{origin_trace_id}-{created_at_to_suffix_id(created_at)}"
+
+    def reset_body_id(self, body: dict, origin_body_id: str, created_at: str) -> str:
+        body_id = self.create_new_trace_id(origin_body_id, created_at)
+        body['id'] = body_id
+        return body_id
+
+    def reset_trace_id(self, body: dict, origin_trace_id: str, created_at: str):
+        if '__trace_id__' in body:
+            body['trace_id'] = self.create_new_trace_id(origin_trace_id, created_at)
+
+    def send_event_to_sink(self, event_id: str, key: str, body: dict, header: dict):
         try:
-            self.kafka_sink.send_trace_ingestion(event_id, body, header)
+            self.kafka_sink.send_trace_ingestion(key, body, header)
         except Exception as e:
-            logger.error("send_trace_error id=%s, err: %s, body = %s", event_id, e, body)
+            logger.error("send_trace_error id=%s, key=%s, err: %s, body = %s", event_id, key, e, body)
             raise e
 
 
@@ -234,17 +278,51 @@ def events_dispose(data: dict, project_id: str, handler_map: dict = None) -> dic
                 continue
 
             body = event['body']
+            # 没有 id 的 body 丢掉
+            if 'id' not in body:
+                errors.append({'id': event_id, 'status': 400, 'message': f'没有找到 body.id'})
+                logger.warning('event=[%s], 没有找到 body.id, 此事件丢掉。', event_id)
+                continue
+            if 'timestamp' not in event:
+                errors.append({'id': event_id, 'status': 400, 'message': f'event 没有找到 timestamp'})
+                logger.warning('event=[%s], event 没有找到 timestamp, 此事件丢掉。', event_id)
+                continue
+
+            # 事件时间
+            timestamp = event['timestamp']
+            body['updated_at'] = timestamp
+
+            # event_type 加 header
             header = top_header.copy()
+            header['event_id'] = event_id
             header['event_type'] = event_type
-            if 'timestamp' in event:
-                body['updated_at'] = event['timestamp']
 
             try:
                 # 处理 event
                 message = handler.handle_event(project_id, body, event, header)
 
+                # 重新生成 body.id
+                _body_id = handler.dump_origin_body_id(body)
+                redis_body_id = handler.create_redis_key_body_id(_body_id)
+                created_at = read_created_at_or_set(redis_body_id, timestamp)
+                new_body_id = handler.reset_body_id(body, _body_id, created_at)
+
+                # 重新设置 observations 的 trace_id
+                trace_id = handler.dump_origin_trace_id(body)
+                key = trace_id
+                if trace_id:
+                    # observations 数据
+                    redis_trace_id = handler.create_redis_key_trace_id(trace_id)
+                    # 用第一次接收到 timestamp 来生成 created_at
+                    trace_created_at = read_created_at_or_set(redis_trace_id, timestamp)
+                    handler.reset_trace_id(body, trace_id, trace_created_at)
+                else:
+                    # 此时是 traces 数据
+                    key = _body_id
+
                 # send to kafka
-                handler.send_event_to_sink(event_id, message, header)
+                # 用 trace_id 作为 key
+                handler.send_event_to_sink(event_id, key, message, header)
                 # 已发送
                 successes.append({'id': event_id, 'status': 201})
             except Exception as e:

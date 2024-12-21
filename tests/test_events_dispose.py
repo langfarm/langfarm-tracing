@@ -30,8 +30,8 @@ class MockTraceHandler(TraceHandler):
         super().__init__()
         self.event_data_list: list[MockEventData] = []
 
-    def send_event_to_sink(self, event_id: str, body: dict, header: dict):
-        logger.info("id=%s, body = %s, header = %s", event_id, body, header)
+    def send_event_to_sink(self, event_id: str, key: str, body: dict, header: dict):
+        logger.info("id=%s, key=%s, body = %s, header = %s", event_id, key, body, header)
         self.event_data_list.append(MockEventData(event_id, body, header))
 
 
@@ -41,8 +41,8 @@ class MockSpanHandler(SpanHandler):
         super().__init__()
         self.event_data_list = []
 
-    def send_event_to_sink(self, event_id: str, body: dict, header: dict):
-        logger.info("id=%s, body = %s, header = %s", event_id, body, header)
+    def send_event_to_sink(self, event_id: str, key: str, body: dict, header: dict):
+        logger.info("id=%s, key=%s, body = %s, header = %s", event_id, key, body, header)
         self.event_data_list.append(MockEventData(event_id, body, header))
 
 
@@ -52,8 +52,8 @@ class MockGenerationHandler(GenerationHandler):
         super().__init__()
         self.event_data_list = []
 
-    def send_event_to_sink(self, event_id: str, body: dict, header: dict):
-        logger.info("id=%s, body = %s, header = %s", event_id, body, header)
+    def send_event_to_sink(self, event_id: str, key: str, body: dict, header: dict):
+        logger.info("id=%s, key=%s, body = %s, header = %s", event_id, key, body, header)
         self.event_data_list.append(MockEventData(event_id, body, header))
 
 
@@ -123,8 +123,10 @@ class MyTestCase(BaseTestCase):
 
         # assert
         for event_data in messages:
-            assert event_data.key in message_map
-            e_event = message_map[event_data.key]
+            # assert 'id' in event_data.body
+            assert 'event_id' in event_data.header
+            assert event_data.header['event_id'] in message_map
+            e_event = message_map[event_data.header['event_id']]
             logger.info('assert receive message, 实际 = %s, 期望 = %s', event_data, e_event)
             assert event_data.body['id'] == e_event.body['id']
             assert event_data.body['project_id'] == e_event.body['project_id']
@@ -149,6 +151,7 @@ class MyTestCase(BaseTestCase):
             # header
             assert 'event_type' in event_data.header
             assert event_data.header['event_type'] == e_event.header['event_type']
+            assert event_data.header['event_id'] == e_event.header['event_id']
 
     def test_events_dispose(self):
         trace_handler = MockTraceHandler()
@@ -170,20 +173,22 @@ class MyTestCase(BaseTestCase):
         for data in datas:
             out = events_dispose(data, project_id, handlers)
             logger.info("mock dispose out => %s", out)
+            errs = out.get('errors')
+            assert len(errs) < 1
 
         expect_event_map = {}
         obs_map = {}
         for handler in [span_handler, generation_handler]:
             events = handler.event_data_list
             for event_obj in events:
-                obs_map[event_obj.event_id] = event_obj
+                obs_map[event_obj.header['event_id']] = event_obj
 
         expect_event_map[self.topics[1]] = obs_map
         traces_map = {}
         for handler in [trace_handler]:
             events = handler.event_data_list
             for event_obj in events:
-                traces_map[event_obj.event_id] = event_obj
+                traces_map[event_obj.header['event_id']] = event_obj
 
         expect_event_map[self.topics[0]] = traces_map
         datas = [
