@@ -35,12 +35,13 @@ class BaseEventHandler:
     def topic_name(self) -> str:
         return self.topic
 
-    def _deal_created_at(self, body: dict, start_time_key: str):
+    def _deal_created_at(self, body: dict, start_time_key: str, event: dict):
         if start_time_key in body:
-            body[start_time_key] = format_datetime(utc_time_to_ltz(body[start_time_key]))
-            created_at = format_datetime(datetime.now())
-            body['created_at'] = created_at
-            body['updated_at'] = created_at
+            # 使用原本的格式 string data-time with utc
+            if 'timestamp' in event:
+                created_at = event['timestamp']
+                body['created_at'] = created_at
+                body['updated_at'] = created_at
 
     def _rename_key(self, body: dict, old_key: str, new_key:str):
         if old_key in body:
@@ -62,7 +63,6 @@ class BaseEventHandler:
 
     def handle_event(self, project_id: str, body: dict, event: dict, header: dict) -> dict:
         body['project_id'] = project_id
-        body['updated_at'] = format_datetime(datetime.now())
 
         result = self._do_handle_event(project_id, body, event)
 
@@ -88,7 +88,7 @@ class TraceHandler(BaseEventHandler):
         obj_transform_str(body, 'output')
         obj_transform_str(body, 'metadata')
 
-        super()._deal_created_at(body, 'timestamp')
+        super()._deal_created_at(body, 'timestamp', event)
 
         # rename
         super()._rename_key(body, 'userId', 'user_id')
@@ -109,10 +109,7 @@ class SpanHandler(BaseEventHandler):
 
         body['type'] = 'SPAN'
 
-        super()._deal_created_at(body, 'startTime')
-
-        if 'endTime' in body:
-            body['endTime'] = format_datetime(utc_time_to_ltz(body['endTime']))
+        super()._deal_created_at(body, 'startTime', event)
 
         # rename
         super()._rename_key(body, 'traceId', 'trace_id')
@@ -240,7 +237,7 @@ def events_dispose(data: dict, project_id: str, handler_map: dict = None) -> dic
             header = top_header.copy()
             header['event_type'] = event_type
             if 'timestamp' in event:
-                header['timestamp'] = format_datetime(utc_time_to_ltz(event['timestamp']))
+                body['updated_at'] = event['timestamp']
 
             try:
                 # 处理 event

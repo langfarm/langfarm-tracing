@@ -39,3 +39,5 @@ RUN wget -O /opt/flink/lib/flink-connector-base-1.20.0.jar \
 
 
 COPY --chown=flink:flink conf/config.yaml /opt/flink/conf/
+
+ENV TZ='Asia/Shanghai'

@@ -1,7 +1,7 @@
 
 CREATE TEMPORARY TABLE kafka_traces_source (
-    id STRING,
-    `timestamp` TIMESTAMP(6),
+    id STRING NOT NULL,
+    `timestamp` TIMESTAMP_LTZ,
     name STRING,
     project_id STRING,
     metadata STRING,
@@ -15,43 +15,53 @@ CREATE TEMPORARY TABLE kafka_traces_source (
     output STRING,
     session_id STRING,
     tags STRING,
-    created_at TIMESTAMP(6),
-    updated_at TIMESTAMP(6)
+    created_at TIMESTAMP_LTZ,
+    updated_at TIMESTAMP_LTZ
 )
 WITH (
-  'connector' = 'kafka',
-  'topic' = 'traces',
-  'properties.bootstrap.servers' = 'kafka:9092',
-  'properties.group.id' = 'kafka-traces-to-paimon',
-  'scan.startup.mode' = 'earliest-offset',
-  'format' = 'json',
-  'json.ignore-parse-errors' = 'true',
-  'json.map-null-key.mode' = 'DROP',
-  'json.encode.decimal-as-plain-number' = 'true'
+    'connector' = 'kafka',
+    'topic' = 'traces',
+    'properties.bootstrap.servers' = 'kafka:9092',
+    'properties.group.id' = 'kafka-traces-to-paimon',
+    'scan.startup.mode' = 'group-offsets',
+    'format' = 'json',
+    -- 格式 "yyyy-MM-ddTHH:mm:ss.s{precision}Z"
+    'json.timestamp-format.standard' = 'ISO-8601',
+    'json.ignore-parse-errors' = 'true',
+    'json.map-null-key.mode' = 'DROP',
+    'json.encode.decimal-as-plain-number' = 'true'
 )
 ;
 
-insert into langfarm.tracing.traces
-select
-id
---,`timestamp`
-,TO_TIMESTAMP_LTZ(EXTRACT(EPOCH from `timestamp`) * 1000 + EXTRACT(MILLISECOND from `timestamp`), 3) as `timestamp`
-,name
-,project_id
-,metadata
-,external_id
-,user_id
-,`release`
-,version
-,public
-,bookmarked
-,input
-,output
-,session_id
-,tags
---,created_at
-,TO_TIMESTAMP_LTZ(EXTRACT(EPOCH from created_at) * 1000 + EXTRACT(MILLISECOND from created_at), 3) as created_at
---,updated_at
-,TO_TIMESTAMP_LTZ(EXTRACT(EPOCH from updated_at) * 1000 + EXTRACT(MILLISECOND from updated_at), 3) as updated_at
-from kafka_traces_source
+-- 从源表复制表结构来创建目标表
+CREATE TABLE IF NOT EXISTS langfarm.tracing.traces (
+    -- 分区字段，按需要增加。
+--    dt STRING,
+--    hh STRING,
+--    PRIMARY KEY (dt, hh, id) NOT ENFORCED
+    PRIMARY KEY (id) NOT ENFORCED
+)
+-- 可以增加 天/小时 分区
+--PARTITIONED BY (dt, hh)
+WITH (
+    'merge-engine' = 'partial-update',
+    'changelog-producer' = 'lookup',
+    -- 分桶默认参数，按需改。
+--    'bucket' = '-1',
+--    'dynamic-bucket.target-row-num' = '2000000',
+    -- 最小 bucket 数，可以增加并行任务。一个 bucket 一个并行。
+    'dynamic-bucket.initial-buckets' = '4',
+    'sink.watermark-time-zone' = 'GMT+08:00'
+)
+LIKE kafka_traces_source (
+    -- 去除源表 options
+    EXCLUDING OPTIONS
+)
+;
+
+--
+INSERT INTO langfarm.tracing.traces
+SELECT
+*
+FROM kafka_traces_source
 ;
