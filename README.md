@@ -14,7 +14,7 @@
 sh bin/start-langfuse-docker-compose.sh
 ```
 
-打开 langfuse（以 v2 版本） http://localhost:3000，创建组织 -> 创建项目 -> 生成 pk/sk （保存好，下面示例需要用到）。
+打开 langfuse（以 v2 版本） http://localhost:3000 ，创建组织 -> 创建项目 -> 生成 pk/sk （保存好，下面示例需要用到）。
 
 启动 kafka 服务
 
