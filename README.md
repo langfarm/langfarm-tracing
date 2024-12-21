@@ -70,15 +70,16 @@ sh bin/start-paimon-flink-docker-compose.sh
 sh bin/run-flink-sql-client.sh
 ```
 
+启动 kafka-to-paimon 任务
 在进入的 flank-sql-client 的 docker 中执行。
 ```bash
 # 进入后，初始化 langfarm 在 paimon 里需要的两个表：
 # 确认是在 /opt/flink 目录
 # cd /opt/flink
-sh scripts/create-tables-in-paimon.sh
 
-# 启动 traces 信息同步任务 kafka-traces-to-paimon
-./bin/sql-client.sh -f scripts/sql/kafka-traces-to-paimon.sql
+# 启动 traces/observations 信息同步任务
+sh scripts/kafka-traces-to-paimon.sh
+sh scripts/kafka-observations-to-paimon.sh
 ```
 
 查看启动的 flink sql 任务 http://localhost:8081/#/job/running
@@ -135,17 +136,20 @@ SET 'execution.runtime-mode' = 'batch';
 
 -- 查询
 select id, name, input, output, created_at, updated_at from langfarm.tracing.traces order by created_at desc limit 10;
+
+-- 查询 observations 表
+-- select id, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at from langfarm.tracing.observations order by created_at desc limit 10;
 ```
 
-结果如下：
+traces 结果如下：
 ```console
-Flink SQL> select id, name, input, output, created_at, updated_at from langfarm.tracing.traces order by created_at desc limit 10;
-+--------------------------------+------------------+--------------------------------+----------------+-------------------------+-------------------------+
-|                             id |             name |                          input |         output |              created_at |              updated_at |
-+--------------------------------+------------------+--------------------------------+----------------+-------------------------+-------------------------+
-| 239ea345-03b9-4a0f-93aa-a33... | RunnableSequence | 把 a = b + c 转成 json 对象...   | {"a": "b + c"} | 2024-12-21 10:06:54.415 | 2024-12-21 10:06:54.932 |
-+--------------------------------+------------------+--------------------------------+----------------+-------------------------+-------------------------+
-1 row in set (0.60 seconds)
+Flink SQL> select id, name, input, created_at, updated_at from langfarm.tracing.traces order by created_at desc limit 10;
++--------------------------------+------------------+--------------------------------+----------------------------+----------------------------+
+|                             id |             name |                          input |                 created_at |                 updated_at |
++--------------------------------+------------------+--------------------------------+----------------------------+----------------------------+
+| afb48fbd-70f3-40e8-9f8b-392... | RunnableSequence | 把 a = b + c 转成 json 对象...   | 2024-12-21 16:41:09.384950 | 2024-12-21 16:41:10.122093 |
++--------------------------------+------------------+--------------------------------+----------------------------+----------------------------+
+1 row in set (0.64 seconds)
 ```
 
 可以看下数据目录
@@ -153,24 +157,24 @@ Flink SQL> select id, name, input, output, created_at, updated_at from langfarm.
  % tree /tmp/langfarm-tracing/paimon/tracing.db/traces
 /tmp/langfarm-tracing/paimon/tracing.db/traces
 ├── bucket-0
-│   ├── changelog-3c2e21c7-8820-43ab-8cb8-da1731fc7a1a-0.parquet
-│   └── data-0a5bd775-e382-4c83-af3e-18f29abd7154-0.parquet
+│   ├── changelog-42238d2f-9501-4220-8634-943e0a79f082-0.parquet
+│   └── data-afbc14c2-abc0-4720-b0cf-122d1a66163a-0.parquet
 ├── index
-│   └── index-93f6bda9-6f87-4a08-9347-559b7e78c1fb-0
+│   └── index-d7dd71b7-ffb8-4e15-b4f5-b601291bda9e-0
 ├── manifest
-│   ├── index-manifest-0c42ca83-c94c-41ca-873a-9ede81ab4c46-0
-│   ├── manifest-7e357907-b597-44cd-b0f7-820553110d6b-0
-│   ├── manifest-7e357907-b597-44cd-b0f7-820553110d6b-1
-│   ├── manifest-7e357907-b597-44cd-b0f7-820553110d6b-2
-│   ├── manifest-list-5f1647b2-ea32-4def-848e-36c895210e5a-0
-│   ├── manifest-list-5f1647b2-ea32-4def-848e-36c895210e5a-1
-│   ├── manifest-list-5f1647b2-ea32-4def-848e-36c895210e5a-2
-│   ├── manifest-list-5f1647b2-ea32-4def-848e-36c895210e5a-3
-│   ├── manifest-list-5f1647b2-ea32-4def-848e-36c895210e5a-4
-│   ├── manifest-list-5f1647b2-ea32-4def-848e-36c895210e5a-5
-│   ├── manifest-list-5f1647b2-ea32-4def-848e-36c895210e5a-6
-│   ├── manifest-list-5f1647b2-ea32-4def-848e-36c895210e5a-7
-│   └── manifest-list-5f1647b2-ea32-4def-848e-36c895210e5a-8
+│   ├── index-manifest-0906d795-98d9-40c0-8e2e-5fe1d7d386b6-0
+│   ├── manifest-85c77495-1a93-4c5c-8a36-6eea7594e9cf-0
+│   ├── manifest-85c77495-1a93-4c5c-8a36-6eea7594e9cf-1
+│   ├── manifest-85c77495-1a93-4c5c-8a36-6eea7594e9cf-2
+│   ├── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-0
+│   ├── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-1
+│   ├── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-2
+│   ├── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-3
+│   ├── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-4
+│   ├── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-5
+│   ├── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-6
+│   ├── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-7
+│   └── manifest-list-f84372e5-2524-40a7-a54a-a10f77e738f9-8
 ├── schema
 │   └── schema-0
 └── snapshot

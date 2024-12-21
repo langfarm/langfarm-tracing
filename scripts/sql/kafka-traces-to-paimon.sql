@@ -59,7 +59,7 @@ LIKE kafka_traces_source (
 )
 ;
 
---
+-- 写入到 paimon 的 traces 表
 INSERT INTO langfarm.tracing.traces
 SELECT
 *

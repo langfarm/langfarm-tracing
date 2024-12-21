@@ -74,6 +74,7 @@ LIKE kafka_observations_source (
 )
 ;
 
+-- 写入到 paimon 的 observations 表
 INSERT INTO langfarm.tracing.observations
 SELECT
 *
