@@ -231,9 +231,10 @@ CREATE CATALOG langfarm WITH (
 
 可能 flink sql 有 bug：langfarm.yaml 的内容为 s3.path.style.access: "'true'" 了，不能在这个 catalog 下操作。
 
-需要改下 /tmp/langfarm-tracing/catalog/langfarm.yaml 文件。
+需要本机改下 /tmp/langfarm-tracing/catalog/langfarm.yaml 文件。
 
-把 s3.path.style.access: ```"'true'"``` 改为 s3.path.style.access: ```"true"``` 或 s3.path.style.access: ```true```。内容如下：
+把 s3.path.style.access: ```"'true'"``` 改为 s3.path.style.access: ```"true"``` 或 s3.path.style.access: ```true```。
+内容如下（也可以省去 SQL 创建 catalog 的步骤，直接在本机修改 /tmp/langfarm-tracing/catalog/langfarm.yaml 的内容如下）：
 
 ```yaml
 s3.access-key: "AAAAAAAAAAAAAAAAAAAA"
@@ -251,7 +252,7 @@ sh scripts/kafka-traces-to-paimon.sh
 sh scripts/kafka-observations-to-paimon.sh
 ```
 
-3 分钟后，可以用上面的示例，验证两个表是否有数据。没有数据，可以运行 ```post_langfuse_traces_with_langfarm.py``` 再生成一次。
+3 分钟后，可以用上面两个 flink sql 查表的示例，验证两个表是否有数据。没有数据，可以运行 ```post_langfuse_traces_with_langfarm.py``` 再生成一次。
 
 ### 使用 StarRocks 查询
 
