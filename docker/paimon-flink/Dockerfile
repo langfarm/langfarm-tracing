@@ -38,6 +38,9 @@ RUN wget -O /opt/flink/lib/flink-connector-base-1.20.0.jar \
     "${MAVEN_MIRROR}/org/apache/flink/flink-connector-base/1.20.0/flink-connector-base-1.20.0.jar"
 
 
+RUN wget -O /opt/flink/lib/paimon-s3-0.9.0.jar \
+    "${MAVEN_MIRROR}/org/apache/paimon/paimon-s3/0.9.0/paimon-s3-0.9.0.jar"
+
 COPY --chown=flink:flink conf/config.yaml /opt/flink/conf/
 
 ENV TZ='Asia/Shanghai'

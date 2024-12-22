@@ -188,3 +188,98 @@ Flink SQL> select id,SPLIT_INDEX(id, '-', 5) as sid, name, REGEXP_REPLACE(input,
 8 directories, 20 files
 ```
 
+## 数据写 paimon + minio，使用 StarRocks 读取示例：
+
+### 搭建 minio 和 StarRocks 环境
+
+```bash
+# 启动 minio 和 StarRocks 的 docker 环境
+sh bin/start-starrocks-docker-compose.sh
+
+# 有个 minio_mc 启动后，执行分配 ak 后自动停止，是正常情况。 
+```
+
+使用 ```miniouser``` 和 ```miniopassword``` 登录 minio：http://localhost:9001/ 。
+* 创建 bucket：```paimon```
+* 创建目录 ```langfarm```
+
+### 创建 paimon 的 minio 的 catalog
+
+可以先取消上面示例的两个 flink 任务。进入 http://localhost:8081/#/job/running JOB 取消（取消不会保存消息的位点，下面重新启动会从最早的数据消费。）
+
+进入 flink sql-client 的 docker
+```bash
+sh bin/run-flink-sql-client.sh
+```
+
+创建 paimon catalog 保存数据到 minio
+```sql
+-- ./bin/sql-client.sh 命令来进入 Flink SQL 客户端。
+-- 上面的示例数据是保存在本机 /tmp/langfarm-tracing/paimon 目录里
+-- 可以先 drop 掉原来的 catalog，删除 catalog 不会删除数据。
+-- DROP CATALOG langfarm
+-- 重新创建 catalog，数据保存在 minio 中。
+CREATE CATALOG langfarm WITH (
+    'type' = 'paimon',
+    'warehouse' = 's3://paimon/langfarm',
+    's3.endpoint' = 'http://minio:9000',
+    's3.access-key' = 'AAAAAAAAAAAAAAAAAAAA',
+    's3.secret-key' = 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+    's3.path.style.access' = 'true'
+);
+```
+
+可能 flink sql 有 bug：langfarm.yaml 的内容为 s3.path.style.access: "'true'" 了，不能在这个 catalog 下操作。
+
+需要改下 /tmp/langfarm-tracing/catalog/langfarm.yaml 文件。
+
+把 s3.path.style.access: ```"'true'"``` 改为 s3.path.style.access: ```"true"``` 或 s3.path.style.access: ```true```。内容如下：
+
+```yaml
+s3.access-key: "AAAAAAAAAAAAAAAAAAAA"
+s3.secret-key: "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+s3.endpoint: "http://minio:9000"
+type: "paimon"
+warehouse: "s3://paimon/langfarm"
+s3.path.style.access: true
+```
+
+重新启动两个 flink 任务
+```bash
+# 启动 traces/observations 信息同步任务
+sh scripts/kafka-traces-to-paimon.sh
+sh scripts/kafka-observations-to-paimon.sh
+```
+
+3 分钟后，可以用上面的示例，验证两个表是否有数据。没有数据，可以运行 ```post_langfuse_traces_with_langfarm.py``` 再生成一次。
+
+### 使用 StarRocks 查询
+
+参考：[StarRocks Paimon Catalog](https://docs.starrocks.io/zh/docs/data_source/catalog/paimon_catalog/#%E5%85%BC%E5%AE%B9-s3-%E5%8D%8F%E8%AE%AE%E7%9A%84%E5%AF%B9%E8%B1%A1%E5%AD%98%E5%82%A8-1)
+
+创建 StarRocks 的外部 catalog，在 starrocks-fe docker 内运行(或本地的 mysql cli 或 MySQL Workbench)
+```bash
+mysql -P 9030 -h 127.0.0.1 -u root --prompt="StarRocks > "
+```
+
+使用如下 SQL 创建 StarRocks catalog
+```sql
+CREATE EXTERNAL CATALOG langfarm
+PROPERTIES
+(
+    "type" = "paimon",
+    "paimon.catalog.type" = "filesystem",
+    "paimon.catalog.warehouse" = "s3://paimon/langfarm",
+    "aws.s3.enable_path_style_access" = "true",
+    "aws.s3.endpoint" = "http://minio:9000",
+    "aws.s3.access_key" = "AAAAAAAAAAAAAAAAAAAA",
+    "aws.s3.secret_key" = "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+);
+```
+
+mysql 客户端查数据
+```sql
+select id, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.traces order by created_at desc limit 0, 10;
+
+select id, name, input, trace_id, created_at, updated_at, dt, hh from langfarm.tracing.observations order by created_at desc limit 0, 10;
+```
