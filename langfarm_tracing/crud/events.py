@@ -301,11 +301,8 @@ def events_dispose(data: dict, project_id: str, handler_map: dict = None) -> dic
                 # 处理 event
                 message = handler.handle_event(project_id, body, event, header)
 
-                # 重新生成 body.id
+                # 取得原始 body.id，用于生成带时间后缀的 body.id，
                 _body_id = handler.dump_origin_body_id(body)
-                redis_body_id = handler.create_redis_key_body_id(_body_id)
-                created_at = read_created_at_or_set(redis_body_id, timestamp)
-                new_body_id = handler.reset_body_id(body, _body_id, created_at)
 
                 # 重新设置 observations 的 trace_id
                 trace_id = handler.dump_origin_trace_id(body)
@@ -316,8 +313,16 @@ def events_dispose(data: dict, project_id: str, handler_map: dict = None) -> dic
                     # 用第一次接收到 timestamp 来生成 created_at
                     trace_created_at = read_created_at_or_set(redis_trace_id, timestamp)
                     handler.reset_trace_id(body, trace_id, trace_created_at)
+
+                    # body.id 的时间后缀也使用 trace 的 created_at
+                    # 下游表按时间分区时，数据落在与 trace 同一分区。
+                    handler.reset_body_id(body, _body_id, trace_created_at)
                 else:
                     # 此时是 traces 数据
+                    redis_body_id = handler.create_redis_key_body_id(_body_id)
+                    trace_created_at = read_created_at_or_set(redis_body_id, timestamp)
+                    handler.reset_body_id(body, _body_id, trace_created_at)
+
                     key = _body_id
 
                 # send to kafka

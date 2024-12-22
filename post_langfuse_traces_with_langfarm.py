@@ -7,6 +7,7 @@ from langchain_community.llms import Tongyi
 from langchain_core.output_parsers import JsonOutputParser
 from langfarm.hooks.langfuse.callback import CallbackHandler
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 load_dotenv(verbose=True)
