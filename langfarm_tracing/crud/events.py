@@ -31,7 +31,9 @@ def format_datetime(dt: datetime) -> str:
 
 def created_at_to_suffix_id(utc_str: str) -> str:
     ltz = utc_time_to_ltz(utc_str)
-    return datetime.strftime(ltz, '%Y%m%d%H')
+    # return datetime.strftime(ltz, '%Y%m%d%H')
+    # 使用Unix时间戳（秒）
+    return str(int(ltz.timestamp()))
 
 
 class BaseEventHandler:
@@ -104,17 +106,28 @@ class BaseEventHandler:
     def create_redis_key_trace_id(self, origin_trace_id) -> str:
         return f"traces-{origin_trace_id}"
 
-    def create_new_trace_id(self, origin_trace_id: str, created_at: str) -> str:
-        return f"{origin_trace_id}-{created_at_to_suffix_id(created_at)}"
+    def create_new_id(self, origin_id: str, created_at: str) -> str:
+        """
+        按 created_at 重新生成 id。格式如 '35d534a3-e8b6-41e0-9554-e835d41b15a9' 的最后一段按成 created_at 的时间戳（秒）
+        :param origin_id: 原始 id
+        :param created_at: 一般是 langfuse 上报的 timestamp
+        :return: 格式如 '35d534a3-e8b6-41e0-9554-1735316902'
+        """
+        return f"{origin_id[:23]}-{created_at_to_suffix_id(created_at)}"
 
     def reset_body_id(self, body: dict, origin_body_id: str, created_at: str) -> str:
-        body_id = self.create_new_trace_id(origin_body_id, created_at)
+        body_id = self.create_new_id(origin_body_id, created_at)
         body['id'] = body_id
         return body_id
 
     def reset_trace_id(self, body: dict, origin_trace_id: str, created_at: str):
         if '__trace_id__' in body:
-            body['trace_id'] = self.create_new_trace_id(origin_trace_id, created_at)
+            body['trace_id'] = self.create_new_id(origin_trace_id, created_at)
+
+    def reset_parent_observation_id(self, body: dict, origin_parent_observation_id, created_at: str):
+        if 'parent_observation_id' in body:
+            body['__parent_id__'] = body['parent_observation_id']
+            body['parent_observation_id'] = self.create_new_id(origin_parent_observation_id, created_at)
 
     def send_event_to_sink(self, event_id: str, key: str, body: dict, header: dict):
         try:
@@ -248,6 +261,9 @@ class GenerationHandler(SpanHandler):
                     body['calculated_input_cost'] = calculated_input_cost
                     body['calculated_output_cost'] = calculated_output_cost
                     body['calculated_total_cost'] = calculated_total_cost
+                    # add model info
+                    body['internal_model'] = model.model_name
+                    body['internal_model_id'] = model.id
 
 
     def _do_handle_event(self, project_id: str, body: dict, event: dict) -> dict:
@@ -346,9 +362,9 @@ def events_dispose(data: dict, project_id: str, handler_map: dict = None) -> dic
                 key = trace_id
                 if trace_id:
                     # observations 数据
-                    redis_trace_id = handler.create_redis_key_trace_id(trace_id)
+                    redis_trace_id_key = handler.create_redis_key_trace_id(trace_id)
                     # 用第一次接收到 timestamp 来生成 created_at
-                    trace_created_at = read_created_at_or_set(redis_trace_id, timestamp)
+                    trace_created_at = read_created_at_or_set(redis_trace_id_key, timestamp)
                     handler.reset_trace_id(body, trace_id, trace_created_at)
 
                     # body.id 的时间后缀也使用 trace 的 created_at
@@ -356,11 +372,18 @@ def events_dispose(data: dict, project_id: str, handler_map: dict = None) -> dic
                     handler.reset_body_id(body, _body_id, trace_created_at)
                 else:
                     # 此时是 traces 数据
-                    redis_body_id = handler.create_redis_key_body_id(_body_id)
-                    trace_created_at = read_created_at_or_set(redis_body_id, timestamp)
+                    redis_body_id_key = handler.create_redis_key_body_id(_body_id)
+                    trace_created_at = read_created_at_or_set(redis_body_id_key, timestamp)
                     handler.reset_body_id(body, _body_id, trace_created_at)
 
                     key = _body_id
+
+                # reset parent_observation_id
+                if 'parent_observation_id' in body:
+                    _parent_id = body['parent_observation_id']
+                    redis_parent_id_key = handler.create_redis_key_body_id(_parent_id)
+                    parent_created_at = read_created_at_or_set(redis_parent_id_key, timestamp)
+                    handler.reset_parent_observation_id(body, _parent_id, parent_created_at)
 
                 # send to kafka
                 # 用 trace_id 作为 key

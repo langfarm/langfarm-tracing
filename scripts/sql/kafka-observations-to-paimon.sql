@@ -33,7 +33,8 @@ CREATE TEMPORARY TABLE kafka_observations_source (
     calculated_total_cost numeric(65,30),
     internal_model_id STRING,
     __id__ STRING,
-    __trace_id__ STRING
+    __trace_id__ STRING,
+    __parent_id__ STRING
 )
 WITH (
     'connector' = 'kafka',
@@ -81,7 +82,7 @@ LIKE kafka_observations_source (
 INSERT INTO langfarm.tracing.observations
 SELECT
 *
-,DATE_FORMAT(TO_TIMESTAMP(SPLIT_INDEX(id, '-', 5), 'yyyyMMddHH'), 'yyyy-MM-dd') AS dt
-,DATE_FORMAT(TO_TIMESTAMP(SPLIT_INDEX(id, '-', 5), 'yyyyMMddHH'), 'HH') AS hh
+,DATE_FORMAT(TO_TIMESTAMP_LTZ(CAST(SPLIT_INDEX(id, '-', 4) AS INT), 0), 'yyyy-MM-dd') AS dt
+,DATE_FORMAT(TO_TIMESTAMP_LTZ(CAST(SPLIT_INDEX(id, '-', 4) AS INT), 0), 'HH') AS hh
 FROM kafka_observations_source
 ;

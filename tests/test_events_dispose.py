@@ -156,10 +156,15 @@ class MyTestCase(BaseTestCase):
             # cal cost
             if 'calculated_input_cost' in event_data.body:
                 assert event_data.body['calculated_input_cost'] == str(e_event.body['calculated_input_cost'])
+                assert 'internal_model' in event_data.body
+                assert 'internal_model_id' in event_data.body
             if 'calculated_output_cost' in event_data.body:
                 assert event_data.body['calculated_output_cost'] == str(e_event.body['calculated_output_cost'])
             if 'calculated_total_cost' in event_data.body:
                 assert event_data.body['calculated_total_cost'] == str(e_event.body['calculated_total_cost'])
+
+            if 'parent_observation_id' in event_data.body:
+                assert event_data.body['parent_observation_id'] == e_event.body['parent_observation_id']
 
     def test_events_dispose(self):
         trace_handler = MockTraceHandler()

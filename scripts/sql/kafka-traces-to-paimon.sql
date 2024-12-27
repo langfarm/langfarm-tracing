@@ -65,7 +65,7 @@ LIKE kafka_traces_source (
 INSERT INTO langfarm.tracing.traces
 SELECT
 *
-,DATE_FORMAT(TO_TIMESTAMP(SPLIT_INDEX(id, '-', 5), 'yyyyMMddHH'), 'yyyy-MM-dd') AS dt
-,DATE_FORMAT(TO_TIMESTAMP(SPLIT_INDEX(id, '-', 5), 'yyyyMMddHH'), 'HH') AS hh
+,DATE_FORMAT(TO_TIMESTAMP_LTZ(CAST(SPLIT_INDEX(id, '-', 4) AS INT), 0), 'yyyy-MM-dd') AS dt
+,DATE_FORMAT(TO_TIMESTAMP_LTZ(CAST(SPLIT_INDEX(id, '-', 4) AS INT), 0), 'HH') AS hh
 FROM kafka_traces_source
 ;

@@ -112,6 +112,9 @@
     },
     "__trace_id__": {
       "type": "string"
+    },
+    "__parent_id__": {
+      "type": "string"
     }
   },
   "required": [ "id", "project_id", "updated_at" ]
