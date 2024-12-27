@@ -103,7 +103,13 @@ class KafkaMessage:
 
 class KafkaSource:
 
-    def __init__(self, topic: str, group_id: str, offset_reset: str = 'earliest'):
+    def __init__(self, topic: str, group_id: str, offset_reset: str = 'latest'):
+        """
+        kafka 消息消费
+        :param topic: 主题
+        :param group_id: 消耗组 id
+        :param offset_reset: 'earliest' or 'latest'。默认 'latest'
+        """
         receive_config = {
             'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS
             , 'group.id': group_id

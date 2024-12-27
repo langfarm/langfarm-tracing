@@ -36,9 +36,9 @@ def created_at_to_suffix_id(utc_str: str) -> str:
 
 class BaseEventHandler:
 
-    def __init__(self, topic: str):
+    def __init__(self, topic: str, schema_name: str = None):
         self.topic = topic
-        self.kafka_sink = KafkaSink(topic)
+        self.kafka_sink = KafkaSink(topic, schema_name)
         self.schema_json = json.loads(self.kafka_sink.schema)
 
     def topic_name(self) -> str:
@@ -126,9 +126,6 @@ class BaseEventHandler:
 
 class TraceHandler(BaseEventHandler):
 
-    def __init__(self):
-        super().__init__('traces')
-
     def _do_handle_event(self, project_id: str, body: dict, event: dict) -> dict:
         obj_transform_str(body, 'input')
         obj_transform_str(body, 'output')
@@ -144,9 +141,6 @@ class TraceHandler(BaseEventHandler):
 
 
 class SpanHandler(BaseEventHandler):
-
-    def __init__(self):
-        super().__init__('observations')
 
     def _do_handle_event(self, project_id: str, body: dict, event: dict) -> dict:
         obj_transform_str(body, 'input')
@@ -276,9 +270,9 @@ class GenerationHandler(SpanHandler):
         return body
 
 
-trace_handler = TraceHandler()
-span_handler = SpanHandler()
-generation_handler = GenerationHandler()
+trace_handler = TraceHandler('traces')
+span_handler = SpanHandler('observations')
+generation_handler = GenerationHandler('observations')
 handlers: dict[str, BaseEventHandler] = {
     'trace-create': trace_handler
     , 'span-create': span_handler

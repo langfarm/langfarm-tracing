@@ -27,7 +27,7 @@ class MockEventData:
 class MockTraceHandler(TraceHandler):
 
     def __init__(self):
-        super().__init__()
+        super().__init__('traces')
         self.event_data_list: list[MockEventData] = []
 
     def send_event_to_sink(self, event_id: str, key: str, body: dict, header: dict):
@@ -38,7 +38,7 @@ class MockTraceHandler(TraceHandler):
 class MockSpanHandler(SpanHandler):
 
     def __init__(self):
-        super().__init__()
+        super().__init__('observations')
         self.event_data_list = []
 
     def send_event_to_sink(self, event_id: str, key: str, body: dict, header: dict):
@@ -49,7 +49,7 @@ class MockSpanHandler(SpanHandler):
 class MockGenerationHandler(GenerationHandler):
 
     def __init__(self):
-        super().__init__()
+        super().__init__('observations')
         self.event_data_list = []
 
     def send_event_to_sink(self, event_id: str, key: str, body: dict, header: dict):
