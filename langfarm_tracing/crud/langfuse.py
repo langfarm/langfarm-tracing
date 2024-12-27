@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from cachetools import cached, TTLCache
 from sqlalchemy import select, or_, text, nullslast
 
 from langfarm_tracing.auth import key
@@ -36,3 +37,15 @@ def find_model(model: str, project_id: str, unit: str = None) -> Model | None:
 
     model = db.read_first(stmt, Model)
     return model
+
+
+# 10 分钟 + 256 容量
+@cached(cache=TTLCache(maxsize=256, ttl=600), info=True)
+def get_api_key_by_cache(pk: str, sk: str) -> ApiKey:
+    api_key = select_api_key_by_pk_sk(pk, sk)
+    return api_key
+
+
+@cached(cache=TTLCache(maxsize=256, ttl=600), info=True)
+def find_model_by_cache(model_name: str, project_id: str, unit: str = None) -> Model | None:
+    return find_model(model_name, project_id, unit=unit)

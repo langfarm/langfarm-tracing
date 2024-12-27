@@ -5,7 +5,9 @@ from datetime import datetime, timezone
 from typing import final
 
 from langfarm_tracing.core.redis import read_created_at_or_set
+from langfarm_tracing.crud.langfuse import find_model_by_cache
 from langfarm_tracing.crud.streaming import KafkaSink
+from langfarm_tracing.schema.langfuse import Model
 
 logger = logging.getLogger(__name__)
 
@@ -167,51 +169,92 @@ class SpanHandler(BaseEventHandler):
 
 class GenerationHandler(SpanHandler):
 
+    def _find_model(self, body: dict, usage: dict) -> Model | None:
+        unit = None
+
+        model = None
+        if 'unit' in usage:
+            unit = usage['unit']
+        if 'model' in body and 'project_id' in body:
+            model_name = body['model']
+            project_id = body['project_id']
+            model = find_model_by_cache(model_name, project_id, unit)
+
+        return model
+
+    def _deal_input_usage(self, usage: dict) -> (int, int, int):
+        prompt_tokens = 0
+        completion_tokens = 0
+        total_tokens = 0
+        if 'input' in usage:
+            prompt_tokens = usage['input']
+        if 'output' in usage:
+            completion_tokens = usage['output']
+        if 'total' in usage:
+            total_tokens = usage['total']
+        else:
+            total_tokens = prompt_tokens + completion_tokens
+
+        return prompt_tokens, completion_tokens, total_tokens
+
+
     def _deal_usage(self, body: dict):
         if 'usage' in body:
             usage = body['usage']
             prompt_tokens = 0
             completion_tokens = 0
             total_tokens = 0
-            if 'input' in usage:
-                prompt_tokens = usage['input']
-            if 'output' in usage:
-                completion_tokens = usage['output']
-            if 'total' in usage:
-                total_tokens = usage['total']
-
-            if 'unit' in usage:
-                body['unit'] = usage['unit']
-
-            input_cost = 0
-            output_cost = 0
             total_cost = 0
-            if 'inputCost' in usage:
-                input_cost = usage['inputCost']
-            if 'outputCost' in usage:
-                output_cost = usage['outputCost']
-            if 'totalCost' in usage:
-                total_cost = usage['totalCost']
+            if 'input' in usage:
+                prompt_tokens, completion_tokens, total_tokens = self._deal_input_usage(usage)
+                if 'unit' in usage:
+                    body['unit'] = usage['unit']
+
+                input_cost = 0
+                output_cost = 0
+                if 'inputCost' in usage:
+                    input_cost = usage['inputCost']
+                if 'outputCost' in usage:
+                    output_cost = usage['outputCost']
+                if 'totalCost' in usage:
+                    total_cost = usage['totalCost']
+                else:
+                    total_cost = input_cost + output_cost
             else:
-                total_cost = input_cost + output_cost
-
-            body['total_cost'] = total_cost
-
-            # other
-            if 'promptTokens' in usage:
-                prompt_tokens = usage['promptTokens']
-            if 'completionTokens' in usage:
-                completion_tokens = usage['completionTokens']
-            if 'totalTokens' in usage:
-                total_tokens = usage['totalTokens']
-
-            if total_tokens < 1:
-                total_tokens = prompt_tokens + completion_tokens
+                # other, 与 input/output 二选一
+                if 'promptTokens' in usage:
+                    prompt_tokens = usage['promptTokens']
+                if 'completionTokens' in usage:
+                    completion_tokens = usage['completionTokens']
+                if 'totalTokens' in usage:
+                    total_tokens = usage['totalTokens']
+                else:
+                    total_tokens = prompt_tokens + completion_tokens
 
             # fill
             body['prompt_tokens'] = prompt_tokens
             body['completion_tokens'] = completion_tokens
             body['total_tokens'] = total_tokens
+
+            if total_cost:
+                # 用户上报 cost
+                body['total_cost'] = total_cost
+            else:
+                # 计算 cost
+                model = self._find_model(body, usage)
+                if model:
+                    calculated_input_cost = prompt_tokens * model.input_price
+                    calculated_output_cost = completion_tokens * model.output_price
+                    if model.total_price:
+                        calculated_total_cost = total_tokens * model.total_price
+                    else:
+                        calculated_total_cost = calculated_input_cost + calculated_output_cost
+
+                    # add body
+                    body['calculated_input_cost'] = calculated_input_cost
+                    body['calculated_output_cost'] = calculated_output_cost
+                    body['calculated_total_cost'] = calculated_total_cost
+
 
     def _do_handle_event(self, project_id: str, body: dict, event: dict) -> dict:
         super()._do_handle_event(project_id, body, event)

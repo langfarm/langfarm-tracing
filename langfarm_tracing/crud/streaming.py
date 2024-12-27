@@ -1,3 +1,4 @@
+import decimal
 import json
 import logging
 
@@ -39,6 +40,14 @@ schema_registry_config = {
 producer = get_kafka_producer()
 
 
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            return str(o)
+        return super().default(o)
+
+
 class KafkaSink:
 
     def __init__(self, topic: str, schema_name: str = None):
@@ -60,7 +69,7 @@ class KafkaSink:
 
     def send_trace_ingestion(self, key: str, data: dict, header: dict):
         headers = self.to_headers(header)
-        post_data = json.dumps(data, ensure_ascii=False)
+        post_data = json.dumps(data, ensure_ascii=False, cls=DecimalEncoder)
         producer.produce(
             topic=self.topic, key=key, value=post_data, headers=headers, callback=delivery_callback
         )

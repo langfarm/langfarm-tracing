@@ -153,6 +153,14 @@ class MyTestCase(BaseTestCase):
             assert event_data.header['event_type'] == e_event.header['event_type']
             assert event_data.header['event_id'] == e_event.header['event_id']
 
+            # cal cost
+            if 'calculated_input_cost' in event_data.body:
+                assert event_data.body['calculated_input_cost'] == str(e_event.body['calculated_input_cost'])
+            if 'calculated_output_cost' in event_data.body:
+                assert event_data.body['calculated_output_cost'] == str(e_event.body['calculated_output_cost'])
+            if 'calculated_total_cost' in event_data.body:
+                assert event_data.body['calculated_total_cost'] == str(e_event.body['calculated_total_cost'])
+
     def test_events_dispose(self):
         trace_handler = MockTraceHandler()
         span_handler = MockSpanHandler()

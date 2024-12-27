@@ -1306,13 +1306,13 @@ reference = "aliyun-pypi"
 
 [[package]]
 name = "langfarm"
-version = "0.1.1"
+version = "0.1.2"
 description = "LLM 相关工具集"
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "langfarm-0.1.1-py3-none-any.whl", hash = "sha256:50c4da86d0d1a9de4dd79c3372d2481c8304a03ed5a42f5ea6aa1a0b73ab7c5b"},
-    {file = "langfarm-0.1.1.tar.gz", hash = "sha256:78efb72df82c0617196ba31e5e04f188de535e91d3e400e5c22f446a146420e0"},
+    {file = "langfarm-0.1.2-py3-none-any.whl", hash = "sha256:5232942259ab073a6fc2abe319d5ce67bff13b1af9e2740b846187c0117489e1"},
+    {file = "langfarm-0.1.2.tar.gz", hash = "sha256:25c2503d6ad2350318d9b59568393ca12f9bb6ca33e2a98e6995553f3b637009"},
 ]
 
 [package.dependencies]
@@ -3042,4 +3042,4 @@ reference = "aliyun-pypi"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "a98582f0a3228a413c5abd1da5ae8dbc7846cb9f268ab3ee9c9e601e31f852c3"
+content-hash = "9bff9fdc2c3654f4cdd2a20dda451da8752c05d7ab4e972599c2306689e60ce1"
