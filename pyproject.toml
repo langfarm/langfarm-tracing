@@ -17,7 +17,12 @@ passlib = {extras=["bcrypt"], version="^1.7.4"}
 bcrypt = "4.0.1"
 
 pydantic-settings = "^2.2.1"
+
+# tools
+## retry
 tenacity = "^9.0.0"
+## local cache
+cachetools = "^5.5.0"
 
 # event body.id 增加 created_at 内容（用于数据分区）
 redis = {extras = ["hiredis"], version = "^5.2.1"}
@@ -27,14 +32,14 @@ psycopg = {extras = ["binary"], version = "^3.1.13"}
 SQLAlchemy = "^2.0.36"
 
 # server
-uvicorn = {extras=["standard"], version="^0.32.1"}
+uvicorn = {extras=["standard"], version="^0.34.0"}
 
-# bigdata
+# write event to kafka
 confluent-kafka = "^2.6.1"
 
-# send kafka with json format
-requests = "^2.32.3"
-jsonschema = "^4.23.0"
+# send kafka with json format, schema registry
+#requests = "^2.32.3"
+#jsonschema = "^4.23.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"

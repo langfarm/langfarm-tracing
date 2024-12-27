@@ -1,24 +1,29 @@
 import json
 import logging
-from functools import lru_cache
 
+from cachetools import cached, TTLCache
 from fastapi import APIRouter, Header, HTTPException, Depends
 
 from langfarm_tracing.auth import key
 
 from langfarm_tracing.crud.events import events_dispose
-from langfarm_tracing.crud.langfuse import select_api_key_by_pk_sk
-from langfarm_tracing.schema.langfuse import ApiKey
+from langfarm_tracing.crud.langfuse import select_api_key_by_pk_sk, find_model as _find_model
+from langfarm_tracing.schema.langfuse import ApiKey, Model
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-
-@lru_cache()
+# 10 分钟 + 256 容量
+@cached(cache=TTLCache(maxsize=256, ttl=600), info=True)
 def get_api_key_by_cache(pk: str, sk: str) -> ApiKey:
     api_key = select_api_key_by_pk_sk(pk, sk)
     return api_key
+
+
+@cached(cache=TTLCache(maxsize=256, ttl=600), info=True)
+def find_model_by_cache(model_name: str, project_id: str, unit: str = None) -> Model | None:
+    return _find_model(model_name, project_id, unit=unit)
 
 
 async def basic_auth(authorization: str = Header()) -> ApiKey:
@@ -48,18 +53,44 @@ def cache_info_to_dict(_cache_info) -> dict:
     }
 
 
-@router.get("/ingestion/cache_info")
-async def cache_info(clear_cache: bool = False):
-    info = cache_info_to_dict(get_api_key_by_cache.cache_info())
+def create_cache_info(_cache_handler, clear_cache: bool = False):
+    info = cache_info_to_dict(_cache_handler.cache_info())
     if clear_cache:
-        get_api_key_by_cache.cache_clear()
-        after_info = cache_info_to_dict(get_api_key_by_cache.cache_info())
+        _cache_handler.cache_clear()
+        after_info = cache_info_to_dict(_cache_handler.cache_info())
         logger.info("clear_cache[api_key], before=%s, after=%s", info, after_info)
         info = after_info
     return info
 
 
-@router.post("/ingestion")
+named_cache = {
+    'api_key': get_api_key_by_cache
+    , 'model': find_model_by_cache
+}
+
+
+@router.get("/cache_info")
+async def cache_info(name: str = None, clear_cache: bool = False):
+    name_list = []
+    if name in named_cache:
+        name_list.append(name)
+    else:
+        name_list.extend(named_cache.keys())
+
+    named_info = {}
+    for name in name_list:
+        named_info[name] = create_cache_info(named_cache[name], clear_cache)
+
+    return named_info
+
+
+@router.get("/find_model")
+async def find_model(model_name: str, unit: str = None, api_key: ApiKey = Depends(basic_auth)):
+    project_id = api_key.project_id
+    return find_model_by_cache(model_name, project_id, unit=unit)
+
+
+@router.post("/")
 async def trace_ingestion(data: dict, api_key: ApiKey = Depends(basic_auth)):
     """
     接收 Langfuse 客户端的 trace 上报
