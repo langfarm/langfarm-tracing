@@ -4,7 +4,10 @@ services:
     environment:
       MINIO_ROOT_USER: miniouser
       MINIO_ROOT_PASSWORD: miniopassword
+      TZ: 'Asia/Shanghai'
     image: minio/minio:latest
+    volumes:
+      - /tmp/minio:/data
     networks:
       - langfarm_default
     ports:
@@ -51,6 +54,8 @@ services:
     hostname: starrocks-fe
     container_name: starrocks-fe
     user: root
+    environment:
+      TZ: 'Asia/Shanghai'
     command:
       - /bin/bash
       - -c
@@ -103,6 +108,7 @@ services:
         /opt/starrocks/cn/bin/start_cn.sh
     environment:
       - HOST_TYPE=FQDN
+      - TZ='Asia/Shanghai'
     ports:
       - 8040:8040
     hostname: starrocks-cn

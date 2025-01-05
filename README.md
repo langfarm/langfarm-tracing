@@ -68,7 +68,7 @@ sh bin/start-paimon-flink-docker-compose.sh
 # table.catalog-store.file.path=/data/catalog-store/
 ```
 
-创建 paimon 的本地文件的 catalog
+创建 paimon 的 catalog 存储在本地文件
 ```bash
 # 在当前项目目录
 cp scripts/catalog-store/langfarm-local.yaml /tmp/langfarm-tracing/catalog-store/langfarm.yaml 
@@ -222,42 +222,30 @@ sh bin/start-starrocks-docker-compose.sh
 
 可以先取消上面示例的两个 flink 任务。进入 http://localhost:8081/#/job/running JOB 取消（取消不会保存消息的位点，下面重新启动会从最早的数据消费。）
 
-进入 flink sql-client 的 docker
+创建 paimon 的 catalog 存储在 minio
 ```bash
-sh bin/run-flink-sql-client.sh
+# 在当前项目目录
+# 覆盖上面的示例（数据存储在本地的 paimon catalog）
+cp scripts/catalog-store/langfarm-minio.yaml /tmp/langfarm-tracing/catalog-store/langfarm.yaml 
+# 如果有不同的参数，可以修改
+# vi /tmp/langfarm-tracing/catalog-store/langfarm.yaml
 ```
 
-创建 paimon catalog 保存数据到 minio
-```sql
--- ./bin/sql-client.sh 命令来进入 Flink SQL 客户端。
--- 上面的示例数据是保存在本机 /tmp/langfarm-tracing/paimon 目录里
--- 可以先 drop 掉原来的 catalog，删除 catalog 不会删除数据。
--- DROP CATALOG langfarm
--- 重新创建 catalog，数据保存在 minio 中。
-CREATE CATALOG langfarm WITH (
-    'type' = 'paimon',
-    'warehouse' = 's3://paimon/langfarm',
-    's3.endpoint' = 'http://minio:9000',
-    's3.access-key' = 'AAAAAAAAAAAAAAAAAAAA',
-    's3.secret-key' = 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
-    's3.path.style.access' = 'true'
-);
-```
-
-可能 flink sql 有 bug：langfarm.yaml 的内容为 s3.path.style.access: "'true'" 了，不能在这个 catalog 下操作。
-
-需要本机改下 /tmp/langfarm-tracing/catalog/langfarm.yaml 文件。
-
-把 s3.path.style.access: ```"'true'"``` 改为 s3.path.style.access: ```"true"``` 或 s3.path.style.access: ```true```。
-内容如下（也可以省去 SQL 创建 catalog 的步骤，直接在本机修改 /tmp/langfarm-tracing/catalog/langfarm.yaml 的内容如下）：
-
+langfarm.yaml 的内容如下：
 ```yaml
 s3.access-key: "AAAAAAAAAAAAAAAAAAAA"
 s3.secret-key: "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
 s3.endpoint: "http://minio:9000"
 type: "paimon"
 warehouse: "s3://paimon/langfarm"
-s3.path.style.access: true
+s3.path.style.access: "true"
+```
+
+也可以[使用 flink sql 来创建 paimon 的存储在 minio 的 catalog](docs/create-catalog.md)。
+
+进入 flink sql-client 的 docker
+```bash
+sh bin/run-flink-sql-client.sh
 ```
 
 重新启动两个 flink 任务
@@ -267,7 +255,10 @@ sh scripts/kafka-traces-to-paimon.sh
 sh scripts/kafka-observations-to-paimon.sh
 ```
 
-3 分钟后，可以用上面两个 flink sql 查表的示例，验证两个表是否有数据。没有数据，可以运行 ```post_langfuse_traces_with_langfarm.py``` 再生成一次。
+3 分钟后，验证两个表是否有数据：
+* 可以用上面两个 flink sql 查表的示例。
+* 打开 minio 看数据：http://localhost:9001/browser/paimon/langfarm%2Ftracing.db%2Ftraces%2F
+* 没有数据，可以运行 ```python post_langfuse_traces_with_langfarm.py``` 再生成一次。
 
 ### 使用 StarRocks 查询
 
@@ -276,6 +267,11 @@ sh scripts/kafka-observations-to-paimon.sh
 创建 StarRocks 的外部 catalog，在 starrocks-fe docker 内运行(或本地的 mysql cli 或 MySQL Workbench)
 ```bash
 mysql -P 9030 -h 127.0.0.1 -u root --prompt="StarRocks > "
+```
+
+或者在本机运行：
+```bash
+sh bin/run-starrocks-sql-client.sh
 ```
 
 使用如下 SQL 创建 StarRocks catalog
@@ -295,7 +291,7 @@ PROPERTIES
 
 mysql 客户端查数据
 ```sql
-select id, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.traces order by created_at desc limit 0, 10;
+select id, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, dt, hh from langfarm.tracing.traces order by created_at desc limit 0, 10;
 
-select id, name, input, trace_id, created_at, updated_at, dt, hh from langfarm.tracing.observations order by created_at desc limit 0, 10;
+select id, name, trace_id, created_at, updated_at, dt, hh from langfarm.tracing.observations order by created_at desc limit 0, 10;
 ```

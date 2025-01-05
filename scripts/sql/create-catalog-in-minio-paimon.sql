@@ -1,4 +1,4 @@
-CREATE CATALOG langfarm WITH (
+CREATE CATALOG IF NOT EXISTS langfarm WITH (
     'type' = 'paimon',
     'warehouse' = 's3://paimon/langfarm',
     's3.endpoint' = 'http://minio:9000',
