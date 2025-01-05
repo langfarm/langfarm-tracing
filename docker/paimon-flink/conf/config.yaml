@@ -42,4 +42,4 @@ table:
   catalog-store:
     kind: file
     file:
-      path: /data/catalog/
+      path: /data/catalog-store/

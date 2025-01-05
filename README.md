@@ -63,6 +63,15 @@ sh bin/build-docker-paimon-flink.sh
 启动 flink 和 paimon 环境
 ```bash
 sh bin/start-paimon-flink-docker-compose.sh
+
+# 本机 /tmp/langfarm-tracing 映射到 flink docker 里的 /data 目录
+# table.catalog-store.file.path=/data/catalog-store/
+```
+
+创建 paimon 的本地文件的 catalog
+```bash
+# 在当前项目目录
+cp scripts/catalog-store/langfarm-local.yaml /tmp/langfarm-tracing/catalog-store/langfarm.yaml 
 ```
 
 进入 flink sql-client 的 docker
@@ -135,47 +144,51 @@ SET 'sql-client.execution.result-mode' = 'tableau';
 SET 'execution.runtime-mode' = 'batch';
 
 -- 查询
-select id,SPLIT_INDEX(id, '-', 5) as sid, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.traces order by created_at desc limit 10;
+select id,SPLIT_INDEX(id, '-', 4) as sid, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.traces order by created_at desc limit 10;
 
 -- 查询 observations 表
--- select id,SPLIT_INDEX(id, '-', 5) as sid, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.observations order by created_at desc limit 10;
+-- select id,SPLIT_INDEX(id, '-', 4) as sid, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.observations order by created_at desc limit 10;
 ```
 
 traces 结果如下：
 ```console
-Flink SQL> select id,SPLIT_INDEX(id, '-', 5) as sid, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.traces order by created_at desc limit 10;
+Flink SQL> select id,SPLIT_INDEX(id, '-', 4) as sid, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.traces order by crea
+ted_at desc limit 10;
 +--------------------------------+------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
 |                             id |        sid |             name |                          input |                 created_at |                 updated_at |         dt | hh |
 +--------------------------------+------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
-| f3d6e324-ca35-4677-9de4-032... | 2024122123 | RunnableSequence | 把 a = b + c 转成 json 对象...   | 2024-12-21 23:34:27.652947 | 2024-12-21 23:35:43.536616 | 2024-12-21 | 23 |
+| 645a4d0c-6a1a-4e20-8693-173... | 1736068751 | RunnableSequence | 把 a = b + c 转成 json 对象... | 2025-01-05 17:19:11.144689 | 2025-01-05 17:19:12.044628 | 2025-01-05 | 17 |
 +--------------------------------+------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
-2 rows in set (0.81 seconds)
+1 row in set (6.39 seconds)
+
 
 ```
 
 可以看下数据目录
 ```console
-% tree /tmp/langfarm-tracing/paimon/tracing.db/traces
-/tmp/langfarm-tracing/paimon/tracing.db/traces
-├── dt=2024-12-21
-│   └── hh=23
+% tree /tmp/langfarm-tracing/paimon/langfarm/tracing.db/traces
+/tmp/langfarm-tracing/paimon/langfarm/tracing.db/traces
+├── dt=2025-01-05
+│   └── hh=17
 │       └── bucket-0
-│           ├── changelog-e9b7388e-f868-4337-b126-4137ec6c88dd-0.parquet
-│           └── data-3020179e-e5a0-4b60-b958-fac4d104049c-0.parquet
+│           ├── changelog-339b47c1-ea9c-4da9-a753-7c8c6eabeaa5-0.parquet
+│           └── data-b3d44960-4d89-4a24-b818-04d1263316d5-0.parquet
 ├── index
-│   └── index-eb68fb9f-8a11-4e8a-b1ed-204f471e3c34-0
+│   └── index-15c894d2-7510-49cf-805f-7b61419aab32-0
 ├── manifest
-│   ├── index-manifest-d11f9b05-2c7e-4ffb-89db-847d3a291d86-0
-│   ├── manifest-8cb7aeee-a87d-4e56-8e2b-46ce153b4cf3-0
-│   ├── manifest-8cb7aeee-a87d-4e56-8e2b-46ce153b4cf3-1
-│   ├── manifest-8cb7aeee-a87d-4e56-8e2b-46ce153b4cf3-2
-│   ├── manifest-list-dc092b4c-f295-481e-9b52-4fb7d1c1d374-0
-│   ├── manifest-list-dc092b4c-f295-481e-9b52-4fb7d1c1d374-1
-│   ├── manifest-list-dc092b4c-f295-481e-9b52-4fb7d1c1d374-2
-│   ├── manifest-list-dc092b4c-f295-481e-9b52-4fb7d1c1d374-3
-│   ├── manifest-list-dc092b4c-f295-481e-9b52-4fb7d1c1d374-4
-│   ├── manifest-list-dc092b4c-f295-481e-9b52-4fb7d1c1d374-5
-│   └── manifest-list-dc092b4c-f295-481e-9b52-4fb7d1c1d374-6
+│   ├── index-manifest-d6d55282-0970-416a-ab3a-6042a13ee506-0
+│   ├── manifest-ccd1cf4b-856c-4b5b-8d0b-ca2123a4bc51-0
+│   ├── manifest-ccd1cf4b-856c-4b5b-8d0b-ca2123a4bc51-1
+│   ├── manifest-ccd1cf4b-856c-4b5b-8d0b-ca2123a4bc51-2
+│   ├── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-0
+│   ├── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-1
+│   ├── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-2
+│   ├── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-3
+│   ├── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-4
+│   ├── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-5
+│   ├── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-6
+│   ├── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-7
+│   └── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-8
 ├── schema
 │   └── schema-0
 └── snapshot
@@ -183,9 +196,11 @@ Flink SQL> select id,SPLIT_INDEX(id, '-', 5) as sid, name, REGEXP_REPLACE(input,
     ├── LATEST
     ├── snapshot-1
     ├── snapshot-2
-    └── snapshot-3
+    ├── snapshot-3
+    └── snapshot-4
 
-8 directories, 20 files
+8 directories, 23 files
+
 ```
 
 ## 数据写 paimon + minio，使用 StarRocks 读取示例：
