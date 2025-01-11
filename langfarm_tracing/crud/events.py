@@ -1,10 +1,10 @@
 import json
 import logging
 from abc import abstractmethod
-from datetime import datetime, timezone
 from typing import final
 
 from langfarm_tracing.core.redis import read_created_at_or_set
+from langfarm_tracing.core.tools import utc_time_to_ltz, rewrite_uuid
 from langfarm_tracing.crud.langfuse import find_model_by_cache
 from langfarm_tracing.crud.streaming import KafkaSink
 from langfarm_tracing.schema.langfuse import Model
@@ -17,16 +17,6 @@ def obj_transform_str(body: dict, key: str):
         _input = body[key]
         if isinstance(_input, (dict, list)):
             body[key] = json.dumps(_input, ensure_ascii=False)
-
-
-def utc_time_to_ltz(utc_str: str) -> datetime:
-    utc = datetime.strptime(utc_str, '%Y-%m-%dT%H:%M:%S.%fZ')
-    ltz = utc.replace(tzinfo=timezone.utc).astimezone()
-    return ltz
-
-
-def format_datetime(dt: datetime) -> str:
-    return datetime.strftime(dt, '%Y-%m-%d %H:%M:%S.%f')
 
 
 def created_at_to_suffix_id(utc_str: str) -> str:
@@ -106,28 +96,30 @@ class BaseEventHandler:
     def create_redis_key_trace_id(self, origin_trace_id) -> str:
         return f"traces-{origin_trace_id}"
 
-    def create_new_id(self, origin_id: str, created_at: str) -> str:
+    def create_new_uuid(self, origin_uuid: str, created_at: str) -> str:
         """
-        按 created_at 重新生成 id。格式如 '35d534a3-e8b6-41e0-9554-e835d41b15a9' 的最后一段按成 created_at 的时间戳（秒）
-        :param origin_id: 原始 id
-        :param created_at: 一般是 langfuse 上报的 timestamp
-        :return: 格式如 '35d534a3-e8b6-41e0-9554-1735316902'
+        按 created_at 重新生成 uuid，转换原 uuid 时间信息。
+        :param origin_uuid: 原始 uuid
+        :param created_at: 一般是 langfuse 上报 trace 的 timestamp
+        :return: 使用 created_at 时间的 uuid
         """
-        return f"{origin_id[:23]}-{created_at_to_suffix_id(created_at)}"
+        return str(rewrite_uuid(origin_uuid, created_at))
 
     def reset_body_id(self, body: dict, origin_body_id: str, created_at: str) -> str:
-        body_id = self.create_new_id(origin_body_id, created_at)
+        # partition time 分区时间
+        body['created_at'] = created_at
+        body_id = self.create_new_uuid(origin_body_id, created_at)
         body['id'] = body_id
         return body_id
 
     def reset_trace_id(self, body: dict, origin_trace_id: str, created_at: str):
         if '__trace_id__' in body:
-            body['trace_id'] = self.create_new_id(origin_trace_id, created_at)
+            body['trace_id'] = self.create_new_uuid(origin_trace_id, created_at)
 
     def reset_parent_observation_id(self, body: dict, origin_parent_observation_id, created_at: str):
         if 'parent_observation_id' in body:
             body['__parent_id__'] = body['parent_observation_id']
-            body['parent_observation_id'] = self.create_new_id(origin_parent_observation_id, created_at)
+            body['parent_observation_id'] = self.create_new_uuid(origin_parent_observation_id, created_at)
 
     def send_event_to_sink(self, event_id: str, key: str, body: dict, header: dict):
         try:
@@ -370,6 +362,11 @@ def events_dispose(data: dict, project_id: str, handler_map: dict = None) -> dic
                     # body.id 的时间后缀也使用 trace 的 created_at
                     # 下游表按时间分区时，数据落在与 trace 同一分区。
                     handler.reset_body_id(body, _body_id, trace_created_at)
+
+                    # reset parent_observation_id
+                    if 'parent_observation_id' in body:
+                        _parent_id = body['parent_observation_id']
+                        handler.reset_parent_observation_id(body, _parent_id, trace_created_at)
                 else:
                     # 此时是 traces 数据
                     redis_body_id_key = handler.create_redis_key_body_id(_body_id)
@@ -377,13 +374,6 @@ def events_dispose(data: dict, project_id: str, handler_map: dict = None) -> dic
                     handler.reset_body_id(body, _body_id, trace_created_at)
 
                     key = _body_id
-
-                # reset parent_observation_id
-                if 'parent_observation_id' in body:
-                    _parent_id = body['parent_observation_id']
-                    redis_parent_id_key = handler.create_redis_key_body_id(_parent_id)
-                    parent_created_at = read_created_at_or_set(redis_parent_id_key, timestamp)
-                    handler.reset_parent_observation_id(body, _parent_id, parent_created_at)
 
                 # send to kafka
                 # 用 trace_id 作为 key

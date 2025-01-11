@@ -46,47 +46,46 @@
 
 observations 表
 ```sql
-select id,SPLIT_INDEX(id, '-', 4) as sid, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.observations order by created_at desc limit 10;
+select id, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.observations order by updated_at desc limit 10;
 ```
 
 结果如下：
 ```console
-Flink SQL> select id,SPLIT_INDEX(id, '-', 4) as sid, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.observations order by created_at desc limit 10;
-+--------------------------------+------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
-|                             id |        sid |             name |                          input |                 created_at |                 updated_at |         dt | hh |
-+--------------------------------+------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
-| 11e675a5-e0f3-461d-b315-173... | 1736068751 | JsonOutputParser | ```json {   "a": "b + c" } ``` | 2025-01-05 17:19:12.043923 | 2025-01-05 17:19:12.044509 | 2025-01-05 | 17 |
-| 4b1ec263-ddf3-4285-9ee1-173... | 1736068751 |           Tongyi | 把 a = b + c 转成 json 对象... | 2025-01-05 17:19:11.146384 | 2025-01-05 17:19:12.043097 | 2025-01-05 | 17 |
-| a7dbc3c0-cf9e-47b3-bd18-173... | 1736068751 | RunnableSequence | 把 a = b + c 转成 json 对象... | 2025-01-05 17:19:11.144777 | 2025-01-05 17:19:12.044572 | 2025-01-05 | 17 |
-+--------------------------------+------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
-3 rows in set (0.74 seconds)
+Flink SQL> select id, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.observations order by updated_at desc limit 10;
++--------------------------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
+|                             id |             name |                          input |                 created_at |                 updated_at |         dt | hh |
++--------------------------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
+| d9f625e0-cfc2-41ef-a567-0ac... | RunnableSequence | 把 a = b + c 转成 json 对象... | 2025-01-11 10:22:05.916720 | 2025-01-11 10:22:06.720550 | 2025-01-11 | 10 |
+| d9f625e0-cfc2-41ef-a6e0-536... | JsonOutputParser | ```json {   "a": "b + c" } ``` | 2025-01-11 10:22:05.916720 | 2025-01-11 10:22:06.720438 | 2025-01-11 | 10 |
+| d9f625e0-cfc2-41ef-a154-498... |           Tongyi | 把 a = b + c 转成 json 对象... | 2025-01-11 10:22:05.916720 | 2025-01-11 10:22:06.717373 | 2025-01-11 | 10 |
++--------------------------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
+3 rows in set (0.85 seconds)
+
 ```
 
 目录结构：
 ```console
 % tree /tmp/langfarm-tracing/paimon/langfarm/tracing.db/observations
 /tmp/langfarm-tracing/paimon/langfarm/tracing.db/observations
-├── dt=2025-01-05
-│   └── hh=17
+├── dt=2025-01-11
+│   └── hh=10
 │       └── bucket-0
-│           ├── changelog-da2c2f92-55bd-49cc-b4ef-c715b42cc25b-0.parquet
-│           └── data-7ad4eca0-9068-4af8-b23a-a25cd344a1e2-0.parquet
+│           ├── changelog-a7381c72-f2b4-4a0e-b0e8-b9605d7367b9-0.parquet
+│           └── data-1265cb38-98e1-4e87-886c-c6d89c16feca-0.parquet
 ├── index
-│   └── index-aceed76f-2c58-42ed-9f98-6f2039cfce08-0
+│   └── index-fbdc0c8e-e1b2-4dc5-bec2-417b94682313-0
 ├── manifest
-│   ├── index-manifest-2ebf74e4-69b8-4eac-8215-785addf76837-0
-│   ├── manifest-2cb055fc-7c65-490e-a085-f41891bbf65f-0
-│   ├── manifest-2cb055fc-7c65-490e-a085-f41891bbf65f-1
-│   ├── manifest-2cb055fc-7c65-490e-a085-f41891bbf65f-2
-│   ├── manifest-list-f23b7f63-9385-4ccb-897a-415952e5a660-0
-│   ├── manifest-list-f23b7f63-9385-4ccb-897a-415952e5a660-1
-│   ├── manifest-list-f23b7f63-9385-4ccb-897a-415952e5a660-2
-│   ├── manifest-list-f23b7f63-9385-4ccb-897a-415952e5a660-3
-│   ├── manifest-list-f23b7f63-9385-4ccb-897a-415952e5a660-4
-│   ├── manifest-list-f23b7f63-9385-4ccb-897a-415952e5a660-5
-│   ├── manifest-list-f23b7f63-9385-4ccb-897a-415952e5a660-6
-│   ├── manifest-list-f23b7f63-9385-4ccb-897a-415952e5a660-7
-│   └── manifest-list-f23b7f63-9385-4ccb-897a-415952e5a660-8
+│   ├── index-manifest-70921707-31c8-4fba-8c11-0ab5ffeaa7eb-0
+│   ├── manifest-c1023420-950c-417b-8217-ac2db9e8e5c7-0
+│   ├── manifest-c1023420-950c-417b-8217-ac2db9e8e5c7-1
+│   ├── manifest-c1023420-950c-417b-8217-ac2db9e8e5c7-2
+│   ├── manifest-list-dc244dfc-1cee-4695-949f-27f73cfbdddd-0
+│   ├── manifest-list-dc244dfc-1cee-4695-949f-27f73cfbdddd-1
+│   ├── manifest-list-dc244dfc-1cee-4695-949f-27f73cfbdddd-2
+│   ├── manifest-list-dc244dfc-1cee-4695-949f-27f73cfbdddd-3
+│   ├── manifest-list-dc244dfc-1cee-4695-949f-27f73cfbdddd-4
+│   ├── manifest-list-dc244dfc-1cee-4695-949f-27f73cfbdddd-5
+│   └── manifest-list-dc244dfc-1cee-4695-949f-27f73cfbdddd-6
 ├── schema
 │   └── schema-0
 └── snapshot
@@ -94,8 +93,8 @@ Flink SQL> select id,SPLIT_INDEX(id, '-', 4) as sid, name, REGEXP_REPLACE(input,
     ├── LATEST
     ├── snapshot-1
     ├── snapshot-2
-    ├── snapshot-3
-    └── snapshot-4
+    └── snapshot-3
 
-8 directories, 23 files
+8 directories, 20 files
+
 ```

@@ -59,6 +59,7 @@ class MockGenerationHandler(GenerationHandler):
 
 class MyTestCase(BaseTestCase):
 
+    project_id = 'cm42wglph0006pmicl9y9o7r8'
     topics = ['traces', 'observations']
     kafka_sources: dict[str, KafkaSource] = {}
 
@@ -67,7 +68,7 @@ class MyTestCase(BaseTestCase):
         for topic in cls.topics:
             group_id = f'test-langfarm-consume-{topic}'
             # 'latest'
-            kafka_source = KafkaSource(topic, group_id)
+            kafka_source = KafkaSource(topic, group_id, offset_reset='earliest')
             cls.kafka_sources[topic] = kafka_source
 
     @classmethod
@@ -131,6 +132,8 @@ class MyTestCase(BaseTestCase):
             assert event_data.body['id'] == e_event.body['id']
             assert event_data.body['project_id'] == e_event.body['project_id']
 
+            assert 'created_at' in event_data.body
+
             if 'name' in event_data.body:
                 assert event_data.body['name'] == e_event.body['name']
             if 'trace_id' in event_data.body:
@@ -166,7 +169,7 @@ class MyTestCase(BaseTestCase):
             if 'parent_observation_id' in event_data.body:
                 assert event_data.body['parent_observation_id'] == e_event.body['parent_observation_id']
 
-    def test_events_dispose(self):
+    def event_dispose_raw(self) -> dict[str, dict]:
         trace_handler = MockTraceHandler()
         span_handler = MockSpanHandler()
         generation_handler = MockGenerationHandler()
@@ -178,13 +181,12 @@ class MyTestCase(BaseTestCase):
             , 'generation-update': generation_handler
         }
 
-        project_id = 'cm42wglph0006pmicl9y9o7r8'
         datas = [
             json.loads(self.read_file_to_str('trace-02-part1.json')),
             json.loads(self.read_file_to_str('trace-02-part2.json'))
         ]
         for data in datas:
-            out = events_dispose(data, project_id, handlers)
+            out = events_dispose(data, self.project_id, handlers)
             logger.info("mock dispose out => %s", out)
             errs = out.get('errors')
             assert len(errs) < 1
@@ -204,19 +206,47 @@ class MyTestCase(BaseTestCase):
                 traces_map[event_obj.header['event_id']] = event_obj
 
         expect_event_map[self.topics[0]] = traces_map
+        return expect_event_map
+
+    def test_events_dispose_raw(self):
+        trace_timestamp = "2024-12-11T16:07:09.474776Z"
+        new_trace_id = 'f9936670-b7d9-41ef-ab5b-db59cd617c24'
+        prefix = 'f9936670-b7d9-41ef-'
+        prefix_len = len(prefix)
+        expect_event_map = self.event_dispose_raw()
+        for k, v in expect_event_map.items():
+            for _, event_obj in v.items():
+                # logger.info('event_body = %s', event_obj.body)
+                # 验证同一个 trace 相关的使用同时分区时间
+                assert 'created_at' in event_obj.body
+                assert event_obj.body['created_at'] == trace_timestamp
+                # trace
+                if 'trace-create' in event_obj.header['event_type']:
+                    assert event_obj.body['id'] == new_trace_id
+                else:
+                    # observation
+                    assert event_obj.body['trace_id'] == new_trace_id
+                    assert event_obj.body['id'][:prefix_len] == prefix
+                    if 'parent_observation_id' in event_obj.body:
+                        assert event_obj.body['parent_observation_id'][:prefix_len] == prefix
+
+
+    def test_events_dispose(self):
+        expect_event_map = self.event_dispose_raw()
+
         datas = [
             json.loads(self.read_file_to_str('trace-02-part1.json')),
             json.loads(self.read_file_to_str('trace-02-part2.json'))
         ]
+
         for data in datas:
-            out = events_dispose(data, project_id)
+            out = events_dispose(data, self.project_id)
             logger.info("kafka dispose out => %s", out)
             errs = out.get('errors')
             assert len(errs) < 1
 
         for topic in self.topics:
             self.assert_receive_message(topic, expect_event_map[topic])
-
 
 if __name__ == '__main__':
     unittest.main()

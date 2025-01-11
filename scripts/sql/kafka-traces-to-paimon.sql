@@ -15,6 +15,7 @@ CREATE TEMPORARY TABLE kafka_traces_source (
     output STRING,
     session_id STRING,
     tags STRING,
+    -- __pt_time__ 与 created_at 字段共用
     created_at TIMESTAMP_LTZ,
     updated_at TIMESTAMP_LTZ,
     __id__ STRING
@@ -65,7 +66,8 @@ LIKE kafka_traces_source (
 INSERT INTO langfarm.tracing.traces
 SELECT
 *
-,DATE_FORMAT(TO_TIMESTAMP_LTZ(CAST(SPLIT_INDEX(id, '-', 4) AS INT), 0), 'yyyy-MM-dd') AS dt
-,DATE_FORMAT(TO_TIMESTAMP_LTZ(CAST(SPLIT_INDEX(id, '-', 4) AS INT), 0), 'HH') AS hh
+-- 更新也会 created_at 字段
+,DATE_FORMAT(created_at, 'yyyy-MM-dd') AS dt
+,DATE_FORMAT(created_at, 'HH') AS hh
 FROM kafka_traces_source
 ;

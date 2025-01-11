@@ -144,62 +144,54 @@ SET 'sql-client.execution.result-mode' = 'tableau';
 SET 'execution.runtime-mode' = 'batch';
 
 -- 查询
-select id,SPLIT_INDEX(id, '-', 4) as sid, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.traces order by created_at desc limit 10;
+select id, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.traces order by updated_at desc limit 10;
 
 -- 查询 observations 表
--- select id,SPLIT_INDEX(id, '-', 4) as sid, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.observations order by created_at desc limit 10;
+-- select id, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.observations order by updated_at desc limit 10;
 ```
 
 traces 结果如下：
 ```console
-Flink SQL> select id,SPLIT_INDEX(id, '-', 4) as sid, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.traces order by crea
-ted_at desc limit 10;
-+--------------------------------+------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
-|                             id |        sid |             name |                          input |                 created_at |                 updated_at |         dt | hh |
-+--------------------------------+------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
-| 645a4d0c-6a1a-4e20-8693-173... | 1736068751 | RunnableSequence | 把 a = b + c 转成 json 对象... | 2025-01-05 17:19:11.144689 | 2025-01-05 17:19:12.044628 | 2025-01-05 | 17 |
-+--------------------------------+------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
-1 row in set (6.39 seconds)
-
-
+Flink SQL> select id, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.traces order by updated_at desc limit 10;
++--------------------------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
+|                             id |             name |                          input |                 created_at |                 updated_at |         dt | hh |
++--------------------------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
+| d9f625e0-cfc2-41ef-bc9f-77b... | RunnableSequence | 把 a = b + c 转成 json 对象... | 2025-01-11 10:22:05.916720 | 2025-01-11 10:22:06.720649 | 2025-01-11 | 10 |
++--------------------------------+------------------+--------------------------------+----------------------------+----------------------------+------------+----+
+1 row in set (0.82 seconds)
 ```
 
 可以看下数据目录
 ```console
 % tree /tmp/langfarm-tracing/paimon/langfarm/tracing.db/traces
 /tmp/langfarm-tracing/paimon/langfarm/tracing.db/traces
-├── dt=2025-01-05
-│   └── hh=17
+├── dt=2025-01-11
+│   └── hh=10
 │       └── bucket-0
-│           ├── changelog-339b47c1-ea9c-4da9-a753-7c8c6eabeaa5-0.parquet
-│           └── data-b3d44960-4d89-4a24-b818-04d1263316d5-0.parquet
+│           ├── changelog-1fe5d509-2449-49b7-92c2-e5f7ff06dd19-0.parquet
+│           └── data-a0e28554-53df-4ad6-953b-cc41d20e4cc5-0.parquet
 ├── index
-│   └── index-15c894d2-7510-49cf-805f-7b61419aab32-0
+│   └── index-cccef3df-d479-4034-aa49-49a5afca8b23-0
 ├── manifest
-│   ├── index-manifest-d6d55282-0970-416a-ab3a-6042a13ee506-0
-│   ├── manifest-ccd1cf4b-856c-4b5b-8d0b-ca2123a4bc51-0
-│   ├── manifest-ccd1cf4b-856c-4b5b-8d0b-ca2123a4bc51-1
-│   ├── manifest-ccd1cf4b-856c-4b5b-8d0b-ca2123a4bc51-2
-│   ├── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-0
-│   ├── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-1
-│   ├── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-2
-│   ├── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-3
-│   ├── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-4
-│   ├── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-5
-│   ├── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-6
-│   ├── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-7
-│   └── manifest-list-563c5a3c-3e71-4432-b00c-66ca40ea85ad-8
+│   ├── index-manifest-d60b578e-3f0a-4d1d-abd7-534eea496772-0
+│   ├── manifest-91a3672b-e675-4f34-b68e-78aaf1487643-0
+│   ├── manifest-91a3672b-e675-4f34-b68e-78aaf1487643-1
+│   ├── manifest-91a3672b-e675-4f34-b68e-78aaf1487643-2
+│   ├── manifest-list-ac2fd74c-643f-4570-8f2f-1474f8034a21-0
+│   ├── manifest-list-ac2fd74c-643f-4570-8f2f-1474f8034a21-1
+│   ├── manifest-list-ac2fd74c-643f-4570-8f2f-1474f8034a21-2
+│   ├── manifest-list-ac2fd74c-643f-4570-8f2f-1474f8034a21-3
+│   └── manifest-list-ac2fd74c-643f-4570-8f2f-1474f8034a21-4
 ├── schema
 │   └── schema-0
 └── snapshot
     ├── EARLIEST
     ├── LATEST
     ├── snapshot-1
-    ├── snapshot-2
-    ├── snapshot-3
-    └── snapshot-4
+    └── snapshot-2
 
-8 directories, 23 files
+8 directories, 17 files
+
 
 ```
 

@@ -20,6 +20,7 @@ CREATE TEMPORARY TABLE kafka_observations_source (
     total_tokens INT,
     version STRING,
     project_id STRING,
+    -- __pt_time__ 与 created_at 字段共用
     created_at TIMESTAMP_LTZ,
     unit STRING,
     prompt_id STRING,
@@ -82,7 +83,8 @@ LIKE kafka_observations_source (
 INSERT INTO langfarm.tracing.observations
 SELECT
 *
-,DATE_FORMAT(TO_TIMESTAMP_LTZ(CAST(SPLIT_INDEX(id, '-', 4) AS INT), 0), 'yyyy-MM-dd') AS dt
-,DATE_FORMAT(TO_TIMESTAMP_LTZ(CAST(SPLIT_INDEX(id, '-', 4) AS INT), 0), 'HH') AS hh
+-- 更新也会 created_at 字段
+,DATE_FORMAT(created_at, 'yyyy-MM-dd') AS dt
+,DATE_FORMAT(created_at, 'HH') AS hh
 FROM kafka_observations_source
 ;
