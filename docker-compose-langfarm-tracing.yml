@@ -1,5 +1,5 @@
 services:
-  langfuse-server:
+  langfuse:
     image: langfuse/langfuse:2
     networks:
       - langfarm_default
@@ -26,6 +26,18 @@ services:
       - LANGFUSE_INIT_USER_NAME=${LANGFUSE_INIT_USER_NAME:-}
       - LANGFUSE_INIT_USER_PASSWORD=${LANGFUSE_INIT_USER_PASSWORD:-}
 
+  tracing:
+    image: langfarm/tracing:0.1.0
+    networks:
+      - langfarm_default
+    depends_on:
+      postgres:
+        condition: service_healthy
+#    volumes:
+#      - ./docker/.env:/home/admin/langfarm-tracing/.env
+    ports:
+      - "3080:3080"
+
   postgres:
     image: postgres
     restart: always
@@ -43,7 +55,7 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - database_data:/var/lib/postgresql/data
+      - /tmp/langfarm-db/pg_data:/var/lib/postgresql/data
 
   pgadmin:
     image: dpage/pgadmin4
@@ -66,10 +78,6 @@ services:
       - langfarm_default
     ports:
       - 6379:6379
-
-volumes:
-  database_data:
-    driver: local
 
 networks:
   langfarm_default:

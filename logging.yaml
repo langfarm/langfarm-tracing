@@ -1,0 +1,44 @@
+version: 1
+disable_existing_loggers: False
+formatters:
+  simple:
+    format: '%(asctime)s %(levelname)s %(name)s(%(lineno)d) - %(message)s'
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: simple
+    stream: ext://sys.stdout
+  server_handler:
+    formatter: simple
+    class: logging.handlers.TimedRotatingFileHandler
+    filename: logs/server.log
+    when: 'D'
+    backupCount: 7
+  access_handler:
+    formatter: simple
+    class: logging.handlers.TimedRotatingFileHandler
+    filename: logs/access.log
+    when: 'D'
+    backupCount: 7
+loggers:
+  langfarm_tracing:
+    level: INFO
+    handlers:
+      - server_handler
+    # 关闭日志传播。即打日志到此为止，不会重复在其它地方打。
+    propagate: no
+  uvicorn.access:
+    level: INFO
+    handlers:
+      - access_handler
+    propagate: no
+  uvicorn.error:
+    level: INFO
+    handlers:
+      - console
+      - server_handler
+    propagate: no
+root:
+  level: INFO
+  handlers:
+    - server_handler
