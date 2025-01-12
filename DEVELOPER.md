@@ -44,6 +44,51 @@
 
 见 README 的示例部分。
 
+
+本机增加 kafka 的 host 绑定：
+```bash
+# vi /etc/hosts
+127.0.0.1 kafka
+```
+
+本地配置文件：
+```bash
+# 配置模板复制为 .env
+cp .env.local.template .env
+
+# 配置 kafka 地址
+KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+```
+
+测试本地环境到 kafka 的连通性。
+```bash
+python -m unittest tests/test_kafka.py
+```
+
+查看 kafka 相关情况：http://localhost:8080/
+* 查看刚刚测试运行的消息 http://localhost:8080/ui/clusters/langfarm/all-topics/events/messages
+
+
+构建 paimon-flink 镜像
+```bash
+# paimon、postgres-cdc、kafka 相关 lib；请看 docker/Dockerfile
+# 增加 flink 的 checkpointing 和 catalog-store 配置，请看 docker/conf/config.yaml
+sh bin/build-docker-paimon-flink.sh
+```
+
+### Langfarm Tracing 接收 langfuse 上报日志
+
+前提：
+* 有 kafka 环境，langfarm-tracing 服务端 .env 配置：KAFKA_BOOTSTRAP_SERVERS。
+* 有 flink + paimon 环境
+* 有 langfuse 的 postgres，langfarm 使用 api_key 数据用于接口监权。
+* 启动 langfarm-tracing 服务。
+
+启动 langfarm-tracing 服务
+```bash
+sh run-server.sh
+```
+
 observations 表
 ```sql
 select id, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, updated_at, dt, hh from langfarm.tracing.observations order by updated_at desc limit 10;

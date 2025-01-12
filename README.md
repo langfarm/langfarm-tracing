@@ -9,69 +9,34 @@
 
 ### 启动相关环境
 
-启动 langfuse
+启动 langfarm 的 docker compose
 ```bash
-sh bin/start-langfuse-docker-compose.sh
+sh bin/start-langfarm-docker-compose.sh
 ```
 
-打开 langfuse（以 v2 版本） http://localhost:3000 ，创建组织 -> 创建项目 -> 生成 pk/sk （保存好，下面示例需要用到）。
-
-启动 kafka 服务
-
-包括组件：
+包括如下组件：
+* postgresql
+* pgadmin - postgresql 的GUI工具
+* langfuse - v2 版本，http://localhost:3000 ，创建组织 -> 创建项目 -> 生成 pk/sk （保存好，下面示例需要用到）。
+* redis - langfarm tracing 改下 uuid 需要；生成数据分区时间。
+* zookeeper
 * kafka - [Apache Kafka 和 Python 入门](https://developer.confluent.io/get-started/python/)
 * [kafka-ui](https://github.com/provectus/kafka-ui) - [docker compose 示例](https://docs.kafka-ui.provectus.io/configuration/compose-examples)
 
-运行启动脚本
-
-```bash
-sh bin/start-kafka-docker-compose.sh
-```
-
-本机增加 kafka 的 host 绑定：
-```bash
-# vi /etc/hosts
-127.0.0.1 kafka
-```
-
-本地配置文件：
-```bash
-# 配置模板复制为 .env
-cp .env.local.template .env
-
-# 配置 kafka 地址
-KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-```
-
-测试本地环境到 kafka 的连通性。
-```bash
-python -m unittest tests/test_kafka.py
-```
-
-查看 kafka 相关情况：http://localhost:8080/
-* 查看刚刚测试运行的消息 http://localhost:8080/ui/clusters/langfarm/all-topics/events/messages
 
 启动 flink + paimon 环境
 
-构建 paimon-flink 镜像
-```bash
-# paimon、postgres-cdc、kafka 相关 lib；请看 docker/Dockerfile
-# 增加 flink 的 checkpointing 和 catalog-store 配置，请看 docker/conf/config.yaml
-sh bin/build-docker-paimon-flink.sh
-```
-
-启动 flink 和 paimon 环境
 ```bash
 sh bin/start-paimon-flink-docker-compose.sh
 
-# 本机 /tmp/langfarm-tracing 映射到 flink docker 里的 /data 目录
+# 本机 /tmp/langfarm/flink 映射到 flink docker 里的 /data 目录
 # table.catalog-store.file.path=/data/catalog-store/
 ```
 
 创建 paimon 的 catalog 存储在本地文件
 ```bash
 # 在当前项目目录
-cp scripts/catalog-store/langfarm-local.yaml /tmp/langfarm-tracing/catalog-store/langfarm.yaml 
+cp scripts/catalog-store/langfarm-local.yaml /tmp/langfarm/flink/catalog-store/langfarm.yaml 
 ```
 
 进入 flink sql-client 的 docker
@@ -93,19 +58,6 @@ sh scripts/kafka-observations-to-paimon.sh
 
 查看启动的 flink sql 任务 http://localhost:8081/#/job/running
 
-
-### Langfarm Tracing 接 langfuse 上报日志
-
-前提：
-* 有 kafka 环境，langfarm-tracing 服务端 .env 配置：KAFKA_BOOTSTRAP_SERVERS。
-* 有 flink + paimon 环境
-* 有 langfuse 的 postgres，langfarm 使用 api_key 数据用于接口监权。
-* 启动 langfarm-tracing 服务。
-
-启动 langfarm-tracing 服务
-```bash
-sh run-server.sh
-```
 
 langfuse sdk 上报
 
@@ -163,8 +115,8 @@ Flink SQL> select id, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_a
 
 可以看下数据目录
 ```console
-% tree /tmp/langfarm-tracing/paimon/langfarm/tracing.db/traces
-/tmp/langfarm-tracing/paimon/langfarm/tracing.db/traces
+% tree /tmp/langfarm/paimon/langfarm/tracing.db/traces
+/tmp/langfarm/paimon/langfarm/tracing.db/traces
 ├── dt=2025-01-11
 │   └── hh=10
 │       └── bucket-0
@@ -208,7 +160,6 @@ sh bin/start-starrocks-docker-compose.sh
 
 使用 ```miniouser``` 和 ```miniopassword``` 登录 minio：http://localhost:9001/ 。
 * 创建 bucket：```paimon```
-* 创建目录 ```langfarm```
 
 ### 创建 paimon 的 minio 的 catalog
 
@@ -218,19 +169,9 @@ sh bin/start-starrocks-docker-compose.sh
 ```bash
 # 在当前项目目录
 # 覆盖上面的示例（数据存储在本地的 paimon catalog）
-cp scripts/catalog-store/langfarm-minio.yaml /tmp/langfarm-tracing/catalog-store/langfarm.yaml 
+cp scripts/catalog-store/langfarm-minio.yaml /tmp/langfarm/flink/catalog-store/langfarm.yaml 
 # 如果有不同的参数，可以修改
 # vi /tmp/langfarm-tracing/catalog-store/langfarm.yaml
-```
-
-langfarm.yaml 的内容如下：
-```yaml
-s3.access-key: "AAAAAAAAAAAAAAAAAAAA"
-s3.secret-key: "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
-s3.endpoint: "http://minio:9000"
-type: "paimon"
-warehouse: "s3://paimon/langfarm"
-s3.path.style.access: "true"
 ```
 
 也可以[使用 flink sql 来创建 paimon 的存储在 minio 的 catalog](docs/create-catalog.md)。
@@ -283,7 +224,7 @@ PROPERTIES
 
 mysql 客户端查数据
 ```sql
-select id, name, REGEXP_REPLACE(input, '\n', ' ') as input, created_at, dt, hh from langfarm.tracing.traces order by created_at desc limit 0, 10;
+select id, name, REGEXP_REPLACE(input, '\n', ' ') as input, updated_at, dt, hh from langfarm.tracing.traces order by updated_at desc limit 0, 10;
 
-select id, name, trace_id, created_at, updated_at, dt, hh from langfarm.tracing.observations order by created_at desc limit 0, 10;
+select id, name, trace_id, updated_at, dt, hh from langfarm.tracing.observations order by updated_at desc limit 0, 10;
 ```
