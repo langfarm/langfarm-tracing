@@ -8,7 +8,7 @@ services:
     volumes:
       - /tmp/langfarm/flink:/data
       - /tmp/langfarm/paimon:/data/paimon
-      - ./scripts:/opt/flink/scripts
+      - ../scripts:/opt/flink/scripts
     environment:
       - |
         FLINK_PROPERTIES=
