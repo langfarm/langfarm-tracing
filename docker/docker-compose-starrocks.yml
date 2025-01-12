@@ -7,7 +7,7 @@ services:
       TZ: 'Asia/Shanghai'
     image: minio/minio:latest
     volumes:
-      - /tmp/minio:/data
+      - /tmp/langfarm/minio:/data
     networks:
       - langfarm_default
     ports:
