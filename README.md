@@ -68,7 +68,7 @@ llm 应用改 LANGFUSE_HOST 配置，指向 langfarm-tracing 服务端的地址�
 ## 修改成本地测试环境的 langfuse pk/sk
 LANGFUSE_SECRET_KEY=sk-lf-xxx
 LANGFUSE_PUBLIC_KEY=pk-lf-xxx
-LANGFUSE_HOST=http://localhost:8000
+LANGFUSE_HOST=http://localhost:3080
 # tongyi API Key
 DASHSCOPE_API_KEY=sk-xxx
 ```
