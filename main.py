@@ -39,4 +39,4 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 # for debug app within idea start
 if __name__ == '__main__':
-    uvicorn.run(app, host="0.0.0.0", log_config="logging_dev.yaml")
+    uvicorn.run(app, host="0.0.0.0", port=3080, log_config="logging_dev.yaml")
