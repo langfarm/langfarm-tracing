@@ -1,27 +1,27 @@
 services:
   jobmanager:
-    image: paimon-flink:0.9.0-1.20
+    image: langfarm/paimon-flink:0.1.1
     ports:
       - "8081:8081"
     command: jobmanager
     networks:
       - langfarm_default
     volumes:
-      - /tmp/langfarm-tracing:/data
+      - /tmp/langfarm/flink:/data
     environment:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager        
 
   taskmanager:
-    image: paimon-flink:0.9.0-1.20
+    image: langfarm/paimon-flink:0.1.1
     depends_on:
       - jobmanager
     command: taskmanager
     networks:
       - langfarm_default
     volumes:
-      - /tmp/langfarm-tracing:/data
+      - /tmp/langfarm/flink:/data
     scale: 1
     environment:
       - |

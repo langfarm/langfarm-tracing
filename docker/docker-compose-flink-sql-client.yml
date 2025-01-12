@@ -1,12 +1,13 @@
 
 services:
   sql-client:
-    image: paimon-flink:0.9.0-1.20
+    image: langfarm/paimon-flink:0.1.1
     networks:
       - langfarm_default
     command: bin/sql-client.sh
     volumes:
-      - /tmp/langfarm-tracing:/data
+      - /tmp/langfarm/flink:/data
+      - /tmp/langfarm/paimon:/data/paimon
       - ./scripts:/opt/flink/scripts
     environment:
       - |
